@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TalentLens — Talent Intelligence Workspace</title>
+<meta name="description" content="Read CVs and job descriptions, score fit, shortlist candidates, and generate interview kits — grounded in your own documents." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{
+  --bg:#101319; --bg-2:#161a22; --panel:#1a1f29; --panel-2:#202632;
+  --line:#2a3140; --line-soft:#222836;
+  --ink:#e9e8e3; --ink-dim:#a6adbb; --ink-faint:#6f7787;
+  --accent:#2dd4a7; --accent-deep:#0e9e7a; --accent-ink:#08130f;
+  --warn:#e0a64b; --bad:#e0795a; --good:#2dd4a7;
+  --shadow:0 1px 0 rgba(255,255,255,.03), 0 12px 30px -12px rgba(0,0,0,.6);
+  --r:14px; --r-sm:9px;
+}
+html[data-theme="light"]{
+  --bg:#f5f3ee; --bg-2:#efece4; --panel:#ffffff; --panel-2:#faf8f3;
+  --line:#e2ddd2; --line-soft:#ebe7dd;
+  --ink:#1b1d22; --ink-dim:#5a6170; --ink-faint:#8a9099;
+  --accent:#0e9e7a; --accent-deep:#0a7a5e; --accent-ink:#ffffff;
+  --warn:#b9802a; --bad:#c2543a; --good:#0e9e7a;
+  --shadow:0 1px 0 rgba(255,255,255,.6), 0 14px 34px -16px rgba(40,40,30,.35);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Inter",system-ui,sans-serif; font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.disp{font-family:"Space Grotesk",sans-serif; letter-spacing:-.01em}
+.mono{font-family:"IBM Plex Mono",monospace}
+button{font-family:inherit; cursor:pointer}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:20px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--ink-faint)}
+
+/* ---------- Topbar ---------- */
+.topbar{
+  height:58px; display:flex; align-items:center; gap:14px;
+  padding:0 18px; border-bottom:1px solid var(--line);
+  background:linear-gradient(var(--bg-2),var(--bg-2)); position:sticky; top:0; z-index:30;
+}
+.brand{display:flex; align-items:center; gap:10px; user-select:none}
+.mark{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;
+  background:radial-gradient(120% 120% at 30% 20%, var(--accent), var(--accent-deep));
+  color:var(--accent-ink); box-shadow:0 4px 14px -4px var(--accent-deep)}
+.mark svg{width:18px;height:18px}
+.brand b{font-family:"Space Grotesk";font-weight:600;font-size:16px;letter-spacing:-.02em}
+.brand span{color:var(--ink-faint);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-left:2px}
+.topbar .grow{flex:1}
+.keywrap{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
+  border-radius:999px;padding:5px 6px 5px 12px}
+.keywrap input{background:transparent;border:0;color:var(--ink);outline:none;width:190px;font-size:12.5px;font-family:"IBM Plex Mono"}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--ink-faint);transition:.3s;flex:none}
+.dot.on{background:var(--good);box-shadow:0 0 0 4px color-mix(in srgb,var(--good) 22%,transparent)}
+.dot.err{background:var(--bad);box-shadow:0 0 0 4px color-mix(in srgb,var(--bad) 22%,transparent)}
+.iconbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--panel);
+  color:var(--ink-dim);display:grid;place-items:center}
+.iconbtn:hover{color:var(--ink);border-color:var(--ink-faint)}
+.iconbtn svg{width:17px;height:17px}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:9px;
+  padding:7px 13px;font-size:13px;font-weight:500;display:inline-flex;gap:7px;align-items:center}
+.btn:hover{border-color:var(--ink-faint)}
+.btn svg{width:15px;height:15px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ---------- Layout ---------- */
+.app{display:grid;grid-template-columns:264px 1fr 360px;height:calc(100vh - 58px)}
+.col{min-height:0;display:flex;flex-direction:column}
+.sidebar{border-right:1px solid var(--line);background:var(--bg-2)}
+.center{background:var(--bg);min-width:0}
+.chat{border-left:1px solid var(--line);background:var(--bg-2)}
+
+.pane-head{display:flex;align-items:center;gap:8px;padding:13px 15px;border-bottom:1px solid var(--line-soft)}
+.pane-head h2{margin:0;font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-dim);font-weight:600}
+.pane-head .grow{flex:1}
+.count{font-size:11px;color:var(--ink-faint);font-family:"IBM Plex Mono"}
+
+/* ---------- Sidebar / docs ---------- */
+.uploadzone{margin:12px;border:1.5px dashed var(--line);border-radius:var(--r);padding:18px 14px;text-align:center;
+  color:var(--ink-faint);transition:.2s;cursor:pointer}
+.uploadzone:hover,.uploadzone.drag{border-color:var(--accent);color:var(--ink-dim);background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.uploadzone svg{width:22px;height:22px;margin-bottom:6px;opacity:.8}
+.uploadzone b{display:block;color:var(--ink);font-size:13px;font-weight:550}
+.uploadzone small{font-size:11px}
+.doclist{flex:1;overflow:auto;padding:4px 10px 14px}
+.doc{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:var(--r-sm);border:1px solid transparent;cursor:pointer;transition:.15s;position:relative}
+.doc:hover{background:var(--panel);border-color:var(--line-soft)}
+.doc.active{background:var(--panel);border-color:var(--line)}
+.doc.sel{box-shadow:inset 3px 0 0 var(--accent)}
+.doc .chk{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line);flex:none;margin-top:1px;display:grid;place-items:center;transition:.15s}
+.doc.sel .chk{background:var(--accent);border-color:var(--accent)}
+.doc .chk svg{width:12px;height:12px;color:var(--accent-ink);opacity:0}
+.doc.sel .chk svg{opacity:1}
+.doc .meta{min-width:0;flex:1}
+.doc .nm{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc .sub{font-size:11px;color:var(--ink-faint);display:flex;gap:6px;align-items:center;margin-top:2px}
+.tag{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;padding:2px 6px;border-radius:5px;border:1px solid var(--line)}
+.tag.cv{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.tag.jd{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,var(--line))}
+.doc .x{position:absolute;right:7px;top:7px;width:20px;height:20px;border-radius:5px;border:0;background:transparent;color:var(--ink-faint);display:none;place-items:center}
+.doc:hover .x{display:grid}
+.doc .x:hover{color:var(--bad);background:var(--panel-2)}
+.tagbtn{font-size:9.5px;border:1px solid var(--line);background:transparent;color:var(--ink-faint);border-radius:5px;padding:2px 6px;text-transform:uppercase;letter-spacing:.06em}
+.tagbtn:hover{color:var(--ink);border-color:var(--ink-faint)}
+.sidebar-foot{padding:10px 12px;border-top:1px solid var(--line-soft);display:flex;gap:8px}
+
+/* ---------- Center tabs ---------- */
+.tabs{display:flex;gap:2px;padding:8px 12px 0;border-bottom:1px solid var(--line-soft);overflow-x:auto}
+.tab{border:0;background:transparent;color:var(--ink-faint);padding:9px 14px;font-size:13px;font-weight:500;
+  border-radius:9px 9px 0 0;position:relative;white-space:nowrap;display:flex;gap:7px;align-items:center}
+.tab svg{width:15px;height:15px}
+.tab:hover{color:var(--ink-dim)}
+.tab.active{color:var(--ink)}
+.tab.active::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;background:var(--accent);border-radius:2px}
+.view{flex:1;overflow:auto;padding:0}
+.view-pad{padding:22px 26px}
+
+/* empty states */
+.empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--ink-faint);padding:40px;gap:6px}
+.empty .ic{width:46px;height:46px;border-radius:13px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;margin-bottom:6px}
+.empty .ic svg{width:22px;height:22px;color:var(--ink-dim)}
+.empty h3{margin:4px 0 0;color:var(--ink);font-size:16px}
+.empty p{margin:0;max-width:330px;font-size:13px}
+
+/* ---------- PDF reader ---------- */
+.reader-bar{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--line-soft);background:var(--bg-2)}
+.reader-bar .nm{font-size:13px;font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%}
+.pagectl{display:flex;align-items:center;gap:6px;margin-left:auto}
+.pagectl button{width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:var(--panel);color:var(--ink-dim);display:grid;place-items:center}
+.pagectl button:hover{color:var(--ink)}
+.pagectl .ind{font-size:12px;font-family:"IBM Plex Mono";color:var(--ink-dim);min-width:62px;text-align:center}
+.canvas-wrap{display:flex;justify-content:center;padding:22px;background:var(--bg)}
+#pdfCanvas{max-width:100%;border-radius:8px;box-shadow:var(--shadow);background:#fff}
+
+/* ---------- Cards / scores ---------- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.card + .card{margin-top:16px}
+.card h3{margin:0 0 3px;font-size:15px}
+.muted{color:var(--ink-dim)}
+.faint{color:var(--ink-faint)}
+.row{display:flex;gap:14px;align-items:center}
+.between{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.scorewrap{display:flex;align-items:center;gap:18px}
+.ring{--p:0;width:84px;height:84px;flex:none;border-radius:50%;display:grid;place-items:center;
+  background:conic-gradient(var(--accent) calc(var(--p)*1%), var(--line) 0)}
+.ring .inner{width:66px;height:66px;border-radius:50%;background:var(--panel);display:grid;place-items:center;flex-direction:column}
+.ring .inner b{font-family:"Space Grotesk";font-size:23px;line-height:1}
+.ring .inner small{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+.verdict{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:6px;display:inline-block}
+.v-strong{color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}
+.v-maybe{color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)}
+.v-weak{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+.dim{margin-top:7px}
+.dim .lab{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px}
+.dim .lab .v{font-family:"IBM Plex Mono";color:var(--ink-dim)}
+.bar{height:7px;border-radius:6px;background:var(--line);overflow:hidden}
+.bar span{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent-deep),var(--accent));transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-size:11.5px;padding:4px 9px;border-radius:7px;border:1px solid var(--line);color:var(--ink-dim);background:var(--panel-2)}
+.chip.good{color:var(--good);border-color:color-mix(in srgb,var(--good) 35%,var(--line))}
+.chip.gap{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 35%,var(--line))}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
+.select{position:relative}
+select{appearance:none;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:9px;
+  padding:8px 30px 8px 12px;font-family:inherit;font-size:13px;outline:none}
+select:focus{border-color:var(--accent)}
+.select::after{content:"";position:absolute;right:12px;top:50%;width:7px;height:7px;border-right:2px solid var(--ink-faint);
+  border-bottom:2px solid var(--ink-faint);transform:translateY(-65%) rotate(45deg);pointer-events:none}
+
+/* table */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint);font-weight:600;padding:0 12px 9px}
+td{padding:11px 12px;border-top:1px solid var(--line-soft);vertical-align:middle}
+tr:hover td{background:var(--panel-2)}
+.rank{font-family:"Space Grotesk";font-weight:600;color:var(--ink-faint);width:30px}
+.minibar{width:78px;height:6px;border-radius:5px;background:var(--line);overflow:hidden;display:inline-block;vertical-align:middle;margin-right:8px}
+.minibar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent-deep),var(--accent))}
+
+/* interview kit */
+.qblock{border:1px solid var(--line-soft);border-radius:var(--r-sm);padding:13px 15px;margin-top:10px;background:var(--panel-2)}
+.qblock .area{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:5px}
+.qblock .q{font-weight:500;font-size:14px}
+.qblock .gll{font-size:12px;color:var(--ink-dim);margin-top:6px;padding-left:11px;border-left:2px solid var(--line)}
+
+/* skills graph */
+#graphCanvas{width:100%;height:100%;display:block;cursor:grab}
+.graph-wrap{position:relative;height:calc(100vh - 58px - 41px)}
+.graph-legend{position:absolute;left:16px;bottom:16px;display:flex;gap:14px;flex-wrap:wrap;
+  background:color-mix(in srgb,var(--panel) 86%,transparent);backdrop-filter:blur(6px);
+  border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:11.5px}
+.lg{display:flex;align-items:center;gap:6px;color:var(--ink-dim)}
+.lg i{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+/* ---------- Chat ---------- */
+.chat-scroll{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.msg{max-width:92%;font-size:13.5px;line-height:1.55}
+.msg.u{align-self:flex-end;background:var(--accent);color:var(--accent-ink);padding:9px 13px;border-radius:13px 13px 4px 13px;font-weight:450}
+.msg.a{align-self:flex-start}
+.msg.a .bubble{background:var(--panel);border:1px solid var(--line);padding:11px 14px;border-radius:13px 13px 13px 4px}
+.msg .who{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:5px;display:flex;align-items:center;gap:6px}
+.cite{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-family:"IBM Plex Mono";color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+  border-radius:5px;padding:1px 5px;margin:0 1px;cursor:pointer;vertical-align:baseline}
+.cite:hover{background:color-mix(in srgb,var(--accent) 22%,transparent)}
+.offdoc{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);margin-bottom:5px;
+  display:inline-flex;gap:5px;align-items:center}
+.scope{font-size:11px;color:var(--ink-faint);padding:7px 16px;border-bottom:1px solid var(--line-soft);background:var(--bg-2)}
+.scope b{color:var(--ink-dim);font-weight:550}
+.suggest{display:flex;flex-direction:column;gap:7px;margin-top:4px}
+.suggest button{text-align:left;border:1px solid var(--line);background:var(--panel);color:var(--ink-dim);
+  border-radius:9px;padding:9px 12px;font-size:12.5px}
+.suggest button:hover{border-color:var(--accent);color:var(--ink)}
+.composer{padding:12px;border-top:1px solid var(--line)}
+.composer .box{display:flex;gap:8px;align-items:flex-end;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 8px 8px 12px}
+.composer .box:focus-within{border-color:var(--accent)}
+textarea#chatInput{flex:1;border:0;background:transparent;color:var(--ink);resize:none;outline:none;font-family:inherit;font-size:13.5px;max-height:130px;line-height:1.5;padding:3px 0}
+.send{width:34px;height:34px;border-radius:9px;border:0;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none}
+.send:disabled{opacity:.4}
+.send svg{width:17px;height:17px}
+
+/* spinner / typing */
+.typing{display:inline-flex;gap:4px;align-items:center}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--ink-faint);animation:bnc 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes bnc{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
+.loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;height:100%;color:var(--ink-faint)}
+.spin{width:30px;height:30px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:rot .8s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* toast */
+#toasts{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px;padding:10px 15px;font-size:13px;display:flex;gap:9px;align-items:center;animation:up .25s ease}
+.toast.err{border-color:color-mix(in srgb,var(--bad) 50%,var(--line))}
+.toast .d{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.toast.err .d{background:var(--bad)}
+@keyframes up{from{transform:translateY(8px);opacity:0}}
+
+/* hero (no docs) */
+.hero{max-width:520px}
+.hero .kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.hero h2{font-size:27px;margin:8px 0 10px;line-height:1.12}
+.feat{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px;text-align:left}
+.feat div{border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:var(--panel)}
+.feat b{font-size:12.5px;display:block}
+.feat small{color:var(--ink-faint);font-size:11.5px}
+
+@media(max-width:1080px){.app{grid-template-columns:230px 1fr 320px}}
+@media(max-width:920px){.app{grid-template-columns:1fr}.sidebar,.chat{display:none}.keywrap input{width:120px}}
+*:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">
+    <div class="mark"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2.2"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+    <b>TalentLens</b><span>UAE</span>
+  </div>
+  <div class="grow"></div>
+  <div class="keywrap" title="Your key is used only in your browser to call the Gemini API. It is never sent anywhere else.">
+    <span class="dot" id="keyDot"></span>
+    <input id="apiKey" type="password" placeholder="Gemini API key" autocomplete="off" spellcheck="false"/>
+  </div>
+  <button class="iconbtn" id="themeBtn" title="Switch theme" aria-label="Switch theme">
+    <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+  </button>
+</div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="col sidebar">
+    <div class="pane-head"><h2>Documents</h2><span class="grow"></span><span class="count" id="docCount">0</span></div>
+    <div class="uploadzone" id="drop">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>
+      <b>Add CVs & job descriptions</b>
+      <small>Drop PDFs here or click to browse</small>
+    </div>
+    <input type="file" id="fileInput" accept="application/pdf" multiple hidden/>
+    <div class="doclist" id="docList"></div>
+    <div class="sidebar-foot">
+      <button class="btn ghost" id="selectAll" style="flex:1;justify-content:center">Select all</button>
+      <button class="btn ghost" id="clearSel" style="flex:1;justify-content:center">Clear</button>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="col center">
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="reader"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>Reader</button>
+      <button class="tab" data-tab="match"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v18M5 8l7-5 7 5M5 8v8l7 5 7-5V8"/></svg>Fit Score</button>
+      <button class="tab" data-tab="shortlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Shortlist</button>
+      <button class="tab" data-tab="interview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 10h8M8 14h5"/><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-5.2A8 8 0 1 1 21 12Z"/></svg>Interview Kit</button>
+      <button class="tab" data-tab="skills"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="7" r="2.5"/><circle cx="12" cy="17" r="2.5"/><path d="M8 7l8 8M16 8l-4 7"/></svg>Skills Graph</button>
+    </div>
+    <div class="view" id="view"></div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="col chat">
+    <div class="pane-head"><h2>Ask TalentLens</h2><span class="grow"></span>
+      <button class="iconbtn" id="clearChat" title="Clear conversation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+    </div>
+    <div class="scope" id="scope">No documents selected — answering from general knowledge.</div>
+    <div class="chat-scroll" id="chatScroll"></div>
+    <div class="composer">
+      <div class="box">
+        <textarea id="chatInput" rows="1" placeholder="Ask about the selected documents…"></textarea>
+        <button class="send" id="sendBtn" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+const MODEL = "gemini-2.5-flash";
+const $ = s => document.querySelector(s);
+
+/* ---------------- state ---------------- */
+const store = {
+  get(k,d){ try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d} },
+  set(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+};
+const state = {
+  apiKey: store.get("tl_key",""),
+  docs: [],            // {id,name,type,pages:[{n,text}],buf,active,sel,numPages}
+  activeId: null,
+  tab: "reader",
+  pdf: null, pageNum: 1,
+  chat: [],            // {role, html|text, off}
+  cache: {}            // analysis caches keyed by signature
+};
+
+/* ---------------- toast ---------------- */
+function toast(msg,err){
+  const t=document.createElement("div");
+  t.className="toast"+(err?" err":"");
+  t.innerHTML=`<span class="d"></span>${msg}`;
+  $("#toasts").appendChild(t);
+  setTimeout(()=>{t.style.opacity="0";t.style.transition="opacity .3s";setTimeout(()=>t.remove(),300)},err?4200:2600);
+}
+
+/* ---------------- Gemini ---------------- */
+function apiErr(txt,status){
+  try{const j=JSON.parse(txt);const m=j.error?.message||"";
+    if(status===400&&/api key/i.test(m)) return "That API key isn’t valid. Check it in Google AI Studio.";
+    if(status===429) return "Rate limit reached on this key. Wait a moment, or use a fresh key.";
+    if(status===403) return "This key isn’t authorised for the Gemini API. Enable it in AI Studio.";
+    return m||("Request failed ("+status+")");
+  }catch(e){ return "Request failed ("+status+")"; }
+}
+async function gemini(prompt,{json=false,system=null,temp=0.3}={}){
+  if(!state.apiKey) throw new Error("Add your Gemini API key (top right) to start.");
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(state.apiKey)}`;
+  const body={contents:[{role:"user",parts:[{text:prompt}]}],generationConfig:{temperature:temp}};
+  if(system) body.systemInstruction={parts:[{text:system}]};
+  if(json) body.generationConfig.responseMimeType="application/json";
+  const res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(!res.ok){ throw new Error(apiErr(await res.text(),res.status)); }
+  const data=await res.json();
+  const cand=data?.candidates?.[0];
+  if(cand?.finishReason==="SAFETY") throw new Error("The model declined to answer that. Try rephrasing.");
+  return (cand?.content?.parts||[]).map(p=>p.text).filter(Boolean).join("");
+}
+function parseJSON(txt){
+  let t=txt.trim().replace(/^```json\s*/i,"").replace(/^```\s*/,"").replace(/```$/,"").trim();
+  try{return JSON.parse(t)}catch(e){
+    const a=t.indexOf("{"),b=t.lastIndexOf("}"),c=t.indexOf("["),d=t.lastIndexOf("]");
+    const s=(c>-1&&(c<a||a<0))?t.slice(c,d+1):t.slice(a,b+1);
+    return JSON.parse(s);
+  }
+}
+async function checkKey(){
+  const dot=$("#keyDot"); dot.className="dot";
+  if(!state.apiKey) return;
+  try{ await gemini("ping",{temp:0}); dot.className="dot on"; toast("Gemini connected"); }
+  catch(e){ dot.className="dot err"; toast(e.message,true); }
+}
+
+/* ---------------- documents ---------------- */
+let idSeq=1;
+function guessType(name,text){
+  const s=(name+" "+text.slice(0,1200)).toLowerCase();
+  const jd=/job description|responsibilities|we are looking|requirements|about the role|key duties|qualifications required|job title|reporting to|employment type/;
+  const cv=/curriculum vitae|\bresume\b|\bcv\b|work experience|professional experience|education|references available|linkedin\.com\/in/;
+  if(jd.test(s)&&!cv.test(s)) return "jd";
+  if(cv.test(s)) return "cv";
+  return jd.test(s)?"jd":"cv";
+}
+async function ingest(files){
+  for(const f of files){
+    if(f.type!=="application/pdf"){ toast(`${f.name} isn’t a PDF`,true); continue; }
+    try{
+      const buf=await f.arrayBuffer();
+      const task=pdfjsLib.getDocument({data:buf.slice(0)});
+      const pdf=await task.promise;
+      const pages=[];
+      for(let i=1;i<=pdf.numPages;i++){
+        const pg=await pdf.getPage(i);
+        const tc=await pg.getTextContent();
+        pages.push({n:i,text:tc.items.map(x=>x.str).join(" ").replace(/\s+/g," ").trim()});
+      }
+      const full=pages.map(p=>p.text).join(" ");
+      const doc={id:idSeq++,name:f.name.replace(/\.pdf$/i,""),type:guessType(f.name,full),
+        pages,buf,numPages:pdf.numPages,sel:true};
+      state.docs.push(doc);
+      if(!state.activeId){ state.activeId=doc.id; }
+      renderDocs(); renderScope();
+      if(state.tab==="reader") openReader(state.activeId);
+      toast(`Added ${doc.name}`);
+    }catch(e){ toast(`Couldn’t read ${f.name}`,true); }
+  }
+}
+function renderDocs(){
+  $("#docCount").textContent=state.docs.length;
+  const list=$("#docList");
+  if(!state.docs.length){ list.innerHTML=`<div style="padding:24px 12px;text-align:center;color:var(--ink-faint);font-size:12.5px">No documents yet.<br>Add a few CVs and a job description to begin.</div>`; return; }
+  list.innerHTML="";
+  for(const d of state.docs){
+    const el=document.createElement("div");
+    el.className="doc"+(d.sel?" sel":"")+(d.id===state.activeId?" active":"");
+    el.innerHTML=`
+      <div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></div>
+      <div class="meta">
+        <div class="nm" title="${d.name}">${d.name}</div>
+        <div class="sub">
+          <button class="tagbtn" data-toggle="${d.id}">${d.type==="cv"?"CV ⇄":"JD ⇄"}</button>
+          <span class="tag ${d.type}">${d.type.toUpperCase()}</span>
+          <span>${d.numPages}p</span>
+        </div>
+      </div>
+      <button class="x" data-del="${d.id}" title="Remove">✕</button>`;
+    el.addEventListener("click",e=>{
+      if(e.target.closest("[data-del]")||e.target.closest("[data-toggle]")) return;
+      if(e.target.closest(".chk")){ d.sel=!d.sel; renderDocs(); renderScope(); refreshTab(); return; }
+      state.activeId=d.id; if(state.tab==="reader") openReader(d.id); renderDocs();
+    });
+    el.querySelector("[data-del]").addEventListener("click",()=>removeDoc(d.id));
+    el.querySelector("[data-toggle]").addEventListener("click",()=>{ d.type=d.type==="cv"?"jd":"cv"; renderDocs(); refreshTab(); });
+    list.appendChild(el);
+  }
+}
+function removeDoc(id){
+  state.docs=state.docs.filter(d=>d.id!==id);
+  if(state.activeId===id) state.activeId=state.docs[0]?.id||null;
+  renderDocs(); renderScope(); refreshTab();
+}
+const selectedDocs=()=>state.docs.filter(d=>d.sel);
+const selCVs=()=>selectedDocs().filter(d=>d.type==="cv");
+const selJDs=()=>selectedDocs().filter(d=>d.type==="jd");
+
+/* ---------------- context builders ---------------- */
+function docContext(docs,cap=9000){
+  let out="",used=0;
+  for(const d of docs){
+    out+=`\n=== ${d.type.toUpperCase()}: "${d.name}" ===\n`;
+    for(const p of d.pages){
+      const seg=`[${d.name} · p.${p.n}] ${p.text}\n`;
+      if(used+seg.length>cap){ out+="…(truncated)\n"; return out; }
+      out+=seg; used+=seg.length;
+    }
+  }
+  return out;
+}
+
+/* ---------------- tabs ---------------- */
+$("#tabs").addEventListener("click",e=>{
+  const b=e.target.closest(".tab"); if(!b) return;
+  state.tab=b.dataset.tab;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t===b));
+  refreshTab();
+});
+function refreshTab(){
+  const v=$("#view");
+  if(state.tab==="reader") return openReader(state.activeId);
+  if(state.tab==="match") return renderMatch();
+  if(state.tab==="shortlist") return renderShortlist();
+  if(state.tab==="interview") return renderInterview();
+  if(state.tab==="skills") return renderSkills();
+}
+
+/* ---------- Reader ---------- */
+async function openReader(id){
+  const v=$("#view"); const d=state.docs.find(x=>x.id===id);
+  if(!d){
+    v.innerHTML=heroEmpty(); bindHero(); return;
+  }
+  v.innerHTML=`
+    <div class="reader-bar">
+      <span class="tag ${d.type}">${d.type.toUpperCase()}</span>
+      <span class="nm">${d.name}</span>
+      <div class="pagectl">
+        <button id="prevPg" aria-label="Previous page">‹</button>
+        <span class="ind" id="pgInd">— / ${d.numPages}</span>
+        <button id="nextPg" aria-label="Next page">›</button>
+      </div>
+    </div>
+    <div class="canvas-wrap"><canvas id="pdfCanvas"></canvas></div>`;
+  try{
+    state.pdf=await pdfjsLib.getDocument({data:d.buf.slice(0)}).promise;
+    state.pageNum=Math.min(state.pageNum,state.pdf.numPages)||1;
+    await drawPage();
+    $("#prevPg").onclick=()=>{ if(state.pageNum>1){state.pageNum--;drawPage();} };
+    $("#nextPg").onclick=()=>{ if(state.pageNum<state.pdf.numPages){state.pageNum++;drawPage();} };
+  }catch(e){ v.querySelector(".canvas-wrap").innerHTML=`<p class="faint">Couldn’t render this PDF.</p>`; }
+}
+async function drawPage(){
+  const pg=await state.pdf.getPage(state.pageNum);
+  const cv=$("#pdfCanvas"); if(!cv) return;
+  const wrapW=Math.min(820,cv.parentElement.clientWidth-44);
+  const base=pg.getViewport({scale:1});
+  const scale=(wrapW/base.width)*Math.min(window.devicePixelRatio||1,2);
+  const vp=pg.getViewport({scale});
+  cv.width=vp.width; cv.height=vp.height;
+  cv.style.width=(vp.width/Math.min(window.devicePixelRatio||1,2))+"px";
+  await pg.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise;
+  const ind=$("#pgInd"); if(ind) ind.textContent=`${state.pageNum} / ${state.pdf.numPages}`;
+}
+function jumpTo(name,page){
+  const d=state.docs.find(x=>x.name===name)||state.docs.find(x=>x.name.includes(name));
+  if(!d) return;
+  state.activeId=d.id; state.pageNum=page||1; state.tab="reader";
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab==="reader"));
+  renderDocs(); openReader(d.id);
+}
+
+/* ---------- shared loaders ---------- */
+function loader(msg){ return `<div class="loader"><div class="spin"></div><div>${msg}</div></div>`; }
+function heroEmpty(){
+  return `<div class="empty"><div class="hero">
+    <div class="kicker">Talent intelligence workspace</div>
+    <h2>Turn a stack of CVs into a ranked shortlist — in minutes.</h2>
+    <p class="muted">Add candidate CVs and a job description on the left. Everything below is grounded in your own documents, with page-level citations.</p>
+    <div class="feat">
+      <div><b>Fit Score</b><small>Score any CV against a role across weighted dimensions.</small></div>
+      <div><b>Shortlist</b><small>Rank every candidate against one job at a glance.</small></div>
+      <div><b>Interview Kit</b><small>Tailored questions that probe each candidate’s gaps.</small></div>
+      <div><b>Skills Graph</b><small>See the skills landscape across your talent pool.</small></div>
+    </div>
+    <div style="margin-top:18px"><button class="btn primary" id="heroAdd">Add documents</button></div>
+  </div></div>`;
+}
+function bindHero(){ const b=$("#heroAdd"); if(b) b.onclick=()=>$("#fileInput").click(); }
+function needDocs(what){
+  return `<div class="empty"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg></div>
+    <h3>${what.title}</h3><p>${what.body}</p>
+    <div style="margin-top:10px"><button class="btn" id="heroAdd2">Add documents</button></div></div>`;
+}
+function bindHero2(){ const b=$("#heroAdd2"); if(b) b.onclick=()=>$("#fileInput").click(); }
+
+/* ---------- Fit Score ---------- */
+async function renderMatch(){
+  const v=$("#view");
+  const jds=selJDs(), cvs=selCVs();
+  if(!state.docs.length){ v.innerHTML=heroEmpty(); bindHero(); return; }
+  if(!jds.length||!cvs.length){
+    v.innerHTML=`<div class="view-pad">${matchControls()}<div class="card" style="margin-top:6px"><p class="muted" style="margin:0">Select at least <b>one job description</b> and <b>one CV</b> in the sidebar, then choose a role above.</p></div></div>`;
+    bindMatchControls(); return;
+  }
+  v.innerHTML=`<div class="view-pad">${matchControls()}<div id="matchOut">${loader("Scoring candidates against the role…")}</div></div>`;
+  bindMatchControls();
+  const jd=jds[0];
+  const out=$("#matchOut");
+  try{
+    const results=[];
+    for(const cv of cvs){
+      const sig="match:"+jd.id+":"+cv.id;
+      let r=state.cache[sig];
+      if(!r){
+        const prompt=`You are an expert technical recruiter. Score how well the CANDIDATE fits the ROLE.
+Return JSON only:
+{"overall":0-100,"verdict":"strong fit"|"possible fit"|"weak fit","summary":"2 sentences",
+"dimensions":[{"name":"Skills match","score":0-100,"note":"short"},{"name":"Experience level","score":0-100,"note":"short"},{"name":"Domain / industry","score":0-100,"note":"short"},{"name":"Role responsibilities","score":0-100,"note":"short"}],
+"strengths":["..."],"gaps":["..."]}
+Be evidence-based and honest; do not inflate scores. Base everything ONLY on the text.
+
+ROLE — ${jd.name}:
+${jd.pages.map(p=>p.text).join(" ").slice(0,5000)}
+
+CANDIDATE — ${cv.name}:
+${cv.pages.map(p=>p.text).join(" ").slice(0,5000)}`;
+        r=parseJSON(await gemini(prompt,{json:true,temp:0.2}));
+        r._name=cv.name; state.cache[sig]=r;
+      }
+      results.push(r);
+    }
+    results.sort((a,b)=>b.overall-a.overall);
+    out.innerHTML=`<p class="faint" style="margin:0 0 14px">Scored against <b style="color:var(--ink-dim)">${jd.name}</b> · ${results.length} candidate${results.length>1?"s":""}</p>`+results.map(matchCard).join("");
+    requestAnimationFrame(()=>document.querySelectorAll(".bar span").forEach(s=>s.style.width=s.dataset.w+"%"));
+  }catch(e){ out.innerHTML=`<div class="card"><p class="muted" style="margin:0">${e.message}</p></div>`; }
+}
+function matchControls(){
+  const jds=selJDs();
+  return `<div class="controls">
+    <div class="select"><select id="jdPick">${jds.map(j=>`<option value="${j.id}">${j.name}</option>`).join("")||`<option>No job selected</option>`}</select></div>
+    <span class="faint" style="font-size:12px">Scoring ${selCVs().length} selected CV(s)</span>
+    <button class="btn ghost" id="reMatch" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg>Re-run</button>
+  </div>`;
+}
+function bindMatchControls(){
+  const re=$("#reMatch"); if(re) re.onclick=()=>{ const jd=selJDs()[0]; selCVs().forEach(cv=>delete state.cache["match:"+(jd&&jd.id)+":"+cv.id]); renderMatch(); };
+  const pick=$("#jdPick"); if(pick) pick.onchange=()=>{
+    const id=+pick.value;
+    state.docs.forEach(d=>{ if(d.type==="jd") d.sel=(d.id===id); });
+    renderDocs(); renderScope(); renderMatch();
+  };
+}
+function vClass(v){ return /strong/i.test(v)?"v-strong":/weak/i.test(v)?"v-weak":"v-maybe"; }
+function matchCard(r){
+  return `<div class="card">
+    <div class="scorewrap">
+      <div class="ring" style="--p:${r.overall}"><div class="inner"><b>${r.overall}</b><small>fit</small></div></div>
+      <div style="flex:1;min-width:0">
+        <div class="between"><h3 style="cursor:pointer" onclick="jumpTo('${(r._name||'').replace(/'/g,'')}',1)">${r._name||"Candidate"}</h3><span class="verdict ${vClass(r.verdict)}">${r.verdict||""}</span></div>
+        <p class="muted" style="margin:4px 0 0">${r.summary||""}</p>
+      </div>
+    </div>
+    <div style="margin-top:16px">${(r.dimensions||[]).map(d=>`
+      <div class="dim"><div class="lab"><span>${d.name} <span class="faint">— ${d.note||""}</span></span><span class="v">${d.score}</span></div>
+      <div class="bar"><span data-w="${d.score}" style="width:0"></span></div></div>`).join("")}</div>
+    <div class="row" style="align-items:flex-start;margin-top:14px;gap:24px">
+      <div style="flex:1"><div class="faint" style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px">Strengths</div><div class="chips">${(r.strengths||[]).map(s=>`<span class="chip good">${s}</span>`).join("")||'<span class="faint">—</span>'}</div></div>
+      <div style="flex:1"><div class="faint" style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px">Gaps</div><div class="chips">${(r.gaps||[]).map(s=>`<span class="chip gap">${s}</span>`).join("")||'<span class="faint">—</span>'}</div></div>
+    </div></div>`;
+}
+
+/* ---------- Shortlist ---------- */
+async function renderShortlist(){
+  const v=$("#view"); const jds=selJDs(), cvs=selCVs();
+  if(!state.docs.length){ v.innerHTML=heroEmpty(); bindHero(); return; }
+  if(!jds.length||cvs.length<1){
+    v.innerHTML=needDocs({title:"Need a role and candidates",body:"Select one job description and one or more CVs to build a ranked shortlist."}); bindHero2(); return;
+  }
+  const jd=jds[0];
+  v.innerHTML=`<div class="view-pad"><div class="between" style="margin-bottom:14px"><div><h3 style="margin:0">Shortlist</h3><span class="faint" style="font-size:12.5px">Ranked against ${jd.name}</span></div>
+    <button class="btn" id="exportSL"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>Export</button></div>
+    <div id="slOut">${loader("Ranking candidates…")}</div></div>`;
+  const out=$("#slOut");
+  try{
+    const rows=[];
+    for(const cv of cvs){
+      const sig="match:"+jd.id+":"+cv.id;
+      let r=state.cache[sig];
+      if(!r){
+        const prompt=`Score candidate fit for the role. JSON only:
+{"overall":0-100,"verdict":"strong fit"|"possible fit"|"weak fit","topStrength":"3-5 words","topGap":"3-5 words","yearsRelevant":number}
+Honest, evidence-based, from text only.
+ROLE ${jd.name}: ${jd.pages.map(p=>p.text).join(" ").slice(0,4000)}
+CANDIDATE ${cv.name}: ${cv.pages.map(p=>p.text).join(" ").slice(0,4000)}`;
+        r=parseJSON(await gemini(prompt,{json:true,temp:0.2})); r._name=cv.name; state.cache[sig]=r;
+      }
+      rows.push(r);
+    }
+    rows.sort((a,b)=>b.overall-a.overall);
+    out.innerHTML=`<table><thead><tr><th>#</th><th>Candidate</th><th>Fit</th><th>Verdict</th><th>Top strength</th><th>Key gap</th></tr></thead><tbody>
+      ${rows.map((r,i)=>`<tr>
+        <td class="rank">${i+1}</td>
+        <td style="font-weight:500;cursor:pointer" onclick="jumpTo('${(r._name||'').replace(/'/g,'')}',1)">${r._name}</td>
+        <td><span class="minibar"><span style="width:${r.overall}%"></span></span><span class="mono" style="font-size:12px">${r.overall}</span></td>
+        <td><span class="verdict ${vClass(r.verdict)}">${r.verdict}</span></td>
+        <td class="muted">${r.topStrength||"—"}</td>
+        <td class="muted">${r.topGap||"—"}</td></tr>`).join("")}
+    </tbody></table>`;
+    $("#exportSL").onclick=()=>exportShortlist(jd.name,rows);
+  }catch(e){ out.innerHTML=`<div class="card"><p class="muted" style="margin:0">${e.message}</p></div>`; }
+}
+function exportShortlist(role,rows){
+  const w=window.open("","_blank");
+  const css=`body{font-family:Inter,Arial,sans-serif;max-width:760px;margin:40px auto;color:#1b1d22;padding:0 20px}
+  h1{font-size:22px}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #e2ddd2;font-size:14px}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#8a9099}.b{height:6px;background:#e2ddd2;border-radius:4px;width:90px;display:inline-block;vertical-align:middle;margin-right:8px;overflow:hidden}.b span{display:block;height:100%;background:#0e9e7a}small{color:#8a9099}`;
+  w.document.write(`<title>Shortlist — ${role}</title><style>${css}</style>
+    <h1>Candidate shortlist</h1><small>Role: ${role} · Generated by TalentLens · ${new Date().toLocaleDateString()}</small>
+    <table><thead><tr><th>#</th><th>Candidate</th><th>Fit</th><th>Verdict</th><th>Top strength</th><th>Key gap</th></tr></thead><tbody>
+    ${rows.map((r,i)=>`<tr><td>${i+1}</td><td><b>${r._name}</b></td><td><span class="b"><span style="width:${r.overall}%"></span></span>${r.overall}</td><td>${r.verdict}</td><td>${r.topStrength||"—"}</td><td>${r.topGap||"—"}</td></tr>`).join("")}
+    </tbody></table><p style="margin-top:24px"><button onclick="print()">Print / Save as PDF</button></p>`);
+  w.document.close();
+}
+
+/* ---------- Interview Kit ---------- */
+async function renderInterview(){
+  const v=$("#view"); const cvs=selCVs(), jds=selJDs();
+  if(!state.docs.length){ v.innerHTML=heroEmpty(); bindHero(); return; }
+  if(!cvs.length){ v.innerHTML=needDocs({title:"Select a candidate",body:"Choose at least one CV (and ideally a job description) to generate a tailored interview kit."}); bindHero2(); return; }
+  v.innerHTML=`<div class="view-pad">
+    <div class="controls"><div class="select"><select id="ivPick">${cvs.map(c=>`<option value="${c.id}">${c.name}</option>`).join("")}</select></div>
+    <span class="faint" style="font-size:12px">${jds.length?"Targeted to "+jds[0].name:"No role selected — general kit"}</span></div>
+    <div id="ivOut">${loader("Building the interview kit…")}</div></div>`;
+  const pick=$("#ivPick"); pick.onchange=()=>buildKit(+pick.value);
+  buildKit(+pick.value);
+}
+async function buildKit(cvId){
+  const out=$("#ivOut"); out.innerHTML=loader("Building the interview kit…");
+  const cv=state.docs.find(d=>d.id===cvId); const jd=selJDs()[0];
+  const sig="kit:"+cvId+":"+(jd?jd.id:"none");
+  try{
+    let k=state.cache[sig];
+    if(!k){
+      const prompt=`You are a hiring manager preparing to interview a candidate${jd?" for a specific role":""}.
+Produce a focused interview kit. JSON only:
+{"questions":[{"area":"e.g. Technical / Leadership / Domain / Behavioural","question":"...","whatGoodLooksLike":"what a strong answer demonstrates"}],
+"probes":["follow-up probes for weak areas"],
+"redFlags":["things in the CV worth verifying or challenging"]}
+Give 6-8 questions. Target the candidate's likely GAPS versus the role, not generic questions. Evidence-based, from the text.
+${jd?`ROLE ${jd.name}: ${jd.pages.map(p=>p.text).join(" ").slice(0,3500)}`:""}
+CANDIDATE ${cv.name}: ${cv.pages.map(p=>p.text).join(" ").slice(0,4500)}`;
+      k=parseJSON(await gemini(prompt,{json:true,temp:0.4})); state.cache[sig]=k;
+    }
+    out.innerHTML=`
+      <div class="card"><div class="between"><h3>Interview kit — ${cv.name}</h3>
+        <button class="btn ghost" id="ivExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>Export</button></div>
+        ${(k.questions||[]).map(q=>`<div class="qblock"><div class="area">${q.area||"Question"}</div><div class="q">${q.question}</div>${q.whatGoodLooksLike?`<div class="gll">Strong answer: ${q.whatGoodLooksLike}</div>`:""}</div>`).join("")}
+      </div>
+      <div class="row" style="align-items:flex-start;gap:16px">
+        <div class="card" style="flex:1"><h3 style="font-size:13px">Follow-up probes</h3><div class="chips" style="margin-top:6px">${(k.probes||[]).map(p=>`<span class="chip">${p}</span>`).join("")||'<span class="faint">—</span>'}</div></div>
+        <div class="card" style="flex:1"><h3 style="font-size:13px">Watch-outs to verify</h3><div class="chips" style="margin-top:6px">${(k.redFlags||[]).map(p=>`<span class="chip gap">${p}</span>`).join("")||'<span class="faint">—</span>'}</div></div>
+      </div>`;
+    $("#ivExport").onclick=()=>exportKit(cv.name,jd?jd.name:"",k);
+  }catch(e){ out.innerHTML=`<div class="card"><p class="muted" style="margin:0">${e.message}</p></div>`; }
+}
+function exportKit(name,role,k){
+  const w=window.open("","_blank");
+  const css=`body{font-family:Inter,Arial,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#1b1d22}h1{font-size:21px;margin-bottom:2px}.area{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#0e9e7a;font-weight:700;margin-top:18px}.q{font-weight:600;margin:3px 0}.g{color:#5a6170;font-size:13px;border-left:2px solid #e2ddd2;padding-left:10px}h2{font-size:14px;margin-top:24px}li{margin:4px 0}small{color:#8a9099}`;
+  w.document.write(`<title>Interview kit — ${name}</title><style>${css}</style><h1>Interview kit — ${name}</h1><small>${role?"Role: "+role+" · ":""}Generated by TalentLens · ${new Date().toLocaleDateString()}</small>
+    ${(k.questions||[]).map(q=>`<div class="area">${q.area||""}</div><div class="q">${q.question}</div>${q.whatGoodLooksLike?`<div class="g">Strong answer: ${q.whatGoodLooksLike}</div>`:""}`).join("")}
+    <h2>Follow-up probes</h2><ul>${(k.probes||[]).map(p=>`<li>${p}</li>`).join("")}</ul>
+    <h2>Watch-outs to verify</h2><ul>${(k.redFlags||[]).map(p=>`<li>${p}</li>`).join("")}</ul>
+    <p style="margin-top:24px"><button onclick="print()">Print / Save as PDF</button></p>`);
+  w.document.close();
+}
+
+/* ---------- Skills Graph ---------- */
+let graphAnim=null;
+async function renderSkills(){
+  const v=$("#view"); const docs=selectedDocs();
+  if(!state.docs.length){ v.innerHTML=heroEmpty(); bindHero(); return; }
+  if(!docs.length){ v.innerHTML=needDocs({title:"Select documents",body:"Pick the CVs and roles you want mapped, and TalentLens will chart the shared skills landscape."}); bindHero2(); return; }
+  v.innerHTML=`<div class="graph-wrap"><div class="loader" style="position:absolute;inset:0">${`<div class="spin"></div><div>Mapping the skills landscape…</div>`}</div></div>`;
+  try{
+    const sig="graph:"+docs.map(d=>d.id).join(",");
+    let g=state.cache[sig];
+    if(!g){
+      const prompt=`Extract a skills/competency knowledge graph across these recruitment documents.
+JSON only: {"nodes":[{"id":"unique short id","label":"display","group":"candidate"|"skill"|"role"|"domain"}],"edges":[{"from":"id","to":"id"}]}
+Rules: make each candidate (CV) and each role (JD) a node; connect them to the SKILLS and DOMAINS evidenced in their text. Merge equivalent skills. 18-34 nodes max. Use real content only.
+${docContext(docs,8000)}`;
+      g=parseJSON(await gemini(prompt,{json:true,temp:0.3})); state.cache[sig]=g;
+    }
+    drawGraph(g);
+  }catch(e){ v.querySelector(".graph-wrap").innerHTML=`<div class="empty"><p class="muted">${e.message}</p></div>`; }
+}
+function drawGraph(g){
+  const v=$("#view");
+  v.innerHTML=`<div class="graph-wrap"><canvas id="graphCanvas"></canvas>
+    <div class="graph-legend">
+      <span class="lg"><i style="background:#2dd4a7"></i>Candidate</span>
+      <span class="lg"><i style="background:#e0a64b"></i>Role</span>
+      <span class="lg"><i style="background:#7aa2ff"></i>Skill</span>
+      <span class="lg"><i style="background:#c98bff"></i>Domain</span>
+    </div></div>`;
+  const cv=$("#graphCanvas"), ctx=cv.getContext("2d");
+  const wrap=cv.parentElement; const dpr=Math.min(window.devicePixelRatio||1,2);
+  function size(){ cv.width=wrap.clientWidth*dpr; cv.height=wrap.clientHeight*dpr; cv.style.width=wrap.clientWidth+"px"; cv.style.height=wrap.clientHeight+"px"; }
+  size();
+  const W=()=>cv.width/dpr, H=()=>cv.height/dpr;
+  const colors={candidate:"#2dd4a7",role:"#e0a64b",skill:"#7aa2ff",domain:"#c98bff"};
+  const css=getComputedStyle(document.documentElement);
+  const ink=css.getPropertyValue("--ink").trim(), line=css.getPropertyValue("--line").trim(), faint=css.getPropertyValue("--ink-faint").trim();
+  const nodes=g.nodes.map(n=>({...n,x:W()/2+(Math.random()-.5)*200,y:H()/2+(Math.random()-.5)*200,vx:0,vy:0,
+    r:(n.group==="candidate"||n.group==="role")?13:8}));
+  const idx={}; nodes.forEach((n,i)=>idx[n.id]=i);
+  const edges=(g.edges||[]).filter(e=>idx[e.from]!=null&&idx[e.to]!=null);
+  const deg={}; edges.forEach(e=>{deg[e.from]=(deg[e.from]||0)+1;deg[e.to]=(deg[e.to]||0)+1});
+  nodes.forEach(n=>{ if(n.group==="skill"||n.group==="domain") n.r=8+Math.min(7,(deg[n.id]||0)*1.5); });
+  let drag=null, off={x:0,y:0};
+  function pt(e){ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; }
+  cv.onmousedown=e=>{ const p=pt(e); for(const n of nodes){ if(Math.hypot(n.x-p.x,n.y-p.y)<n.r+5){ drag=n; off={x:n.x-p.x,y:n.y-p.y}; cv.style.cursor="grabbing"; break; } } };
+  window.addEventListener("mousemove",mv); function mv(e){ if(!drag)return; const p=pt(e); drag.x=p.x+off.x; drag.y=p.y+off.y; drag.vx=drag.vy=0; }
+  window.addEventListener("mouseup",()=>{ drag=null; cv.style.cursor="grab"; });
+  function step(){
+    for(let i=0;i<nodes.length;i++){ const a=nodes[i];
+      for(let j=i+1;j<nodes.length;j++){ const b=nodes[j];
+        let dx=a.x-b.x,dy=a.y-b.y,d=Math.hypot(dx,dy)||1; const f=2600/(d*d);
+        const fx=dx/d*f,fy=dy/d*f; a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy; }
+      a.vx+=(W()/2-a.x)*0.0015; a.vy+=(H()/2-a.y)*0.0015;
+    }
+    for(const e of edges){ const a=nodes[idx[e.from]],b=nodes[idx[e.to]];
+      let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1; const f=(d-90)*0.012;
+      const fx=dx/d*f,fy=dy/d*f; a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy; }
+    for(const n of nodes){ if(n===drag)continue; n.vx*=0.86;n.vy*=0.86; n.x+=n.vx; n.y+=n.vy;
+      n.x=Math.max(n.r+6,Math.min(W()-n.r-6,n.x)); n.y=Math.max(n.r+6,Math.min(H()-n.r-6,n.y)); }
+    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W(),H());
+    ctx.strokeStyle=line; ctx.lineWidth=1;
+    for(const e of edges){ const a=nodes[idx[e.from]],b=nodes[idx[e.to]];
+      ctx.globalAlpha=.55; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); }
+    ctx.globalAlpha=1;
+    ctx.font="500 11px Inter, sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    for(const n of nodes){
+      const c=colors[n.group]||"#888";
+      ctx.beginPath(); ctx.arc(n.x,n.y,n.r,0,7); ctx.fillStyle=c; ctx.fill();
+      if(n.group==="candidate"||n.group==="role"){ ctx.lineWidth=2; ctx.strokeStyle=c; ctx.globalAlpha=.3; ctx.beginPath(); ctx.arc(n.x,n.y,n.r+4,0,7); ctx.stroke(); ctx.globalAlpha=1; }
+      const big=n.group==="candidate"||n.group==="role";
+      ctx.fillStyle=big?ink:faint;
+      ctx.font=(big?"600 ":"450 ")+(big?12:10.5)+"px Inter, sans-serif";
+      const lbl=n.label.length>22?n.label.slice(0,21)+"…":n.label;
+      ctx.fillText(lbl,n.x,n.y+n.r+9);
+    }
+    graphAnim=requestAnimationFrame(step);
+  }
+  if(graphAnim) cancelAnimationFrame(graphAnim);
+  step();
+  window.addEventListener("resize",()=>{ if(state.tab==="skills"){size();} });
+}
+
+/* ---------- Chat ---------- */
+function renderScope(){
+  const sel=selectedDocs();
+  const sc=$("#scope");
+  if(!sel.length){ sc.innerHTML="No documents selected — answering from general knowledge."; $("#chatInput").placeholder="Ask anything…"; }
+  else{ sc.innerHTML=`Grounded in <b>${sel.length} document${sel.length>1?"s":""}</b> · ${selCVs().length} CV · ${selJDs().length} JD`; $("#chatInput").placeholder="Ask about the selected documents…"; }
+}
+function renderChat(){
+  const sc=$("#chatScroll");
+  if(!state.chat.length){
+    sc.innerHTML=`<div class="msg a"><div class="who">TalentLens</div><div class="bubble">I’m your recruitment co-pilot. Select documents on the left and I’ll answer with page citations — or ask me anything and I’ll answer from general knowledge.
+      <div class="suggest">
+        <button>Summarise this candidate in 3 bullet points</button>
+        <button>What are the must-have requirements in this role?</button>
+        <button>Which candidate is strongest for this job and why?</button>
+      </div></div></div>`;
+    sc.querySelectorAll(".suggest button").forEach(b=>b.onclick=()=>{ $("#chatInput").value=b.textContent; send(); });
+    return;
+  }
+  sc.innerHTML=state.chat.map(m=>{
+    if(m.role==="u") return `<div class="msg u">${escapeHtml(m.text)}</div>`;
+    if(m.role==="typing") return `<div class="msg a"><div class="who">TalentLens</div><div class="bubble"><span class="typing"><i></i><i></i><i></i></span></div></div>`;
+    return `<div class="msg a"><div class="who">TalentLens</div><div class="bubble">${m.off?`<div class="offdoc">⚡ General knowledge — outside your documents</div>`:""}${m.html}</div></div>`;
+  }).join("");
+  sc.querySelectorAll(".cite").forEach(c=>c.onclick=()=>jumpTo(c.dataset.name,+c.dataset.page));
+  sc.scrollTop=sc.scrollHeight;
+}
+function escapeHtml(s){ return s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+function formatAnswer(txt){
+  let off=false;
+  if(/^\s*\[OFFDOC\]/.test(txt)){ off=true; txt=txt.replace(/^\s*\[OFFDOC\]\s*/,""); }
+  let html=escapeHtml(txt);
+  // citations like (Name, p.3) or (Name p.3)
+  html=html.replace(/\(([^()]{1,60}?)[,·]?\s*p\.?\s*(\d+)\)/gi,(m,name,page)=>{
+    const n=name.trim();
+    return `<span class="cite" data-name="${n.replace(/"/g,'')}" data-page="${page}">¶ ${n} p.${page}</span>`;
+  });
+  html=html.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/\n\s*[-•]\s+/g,"<br>• ").replace(/\n{2,}/g,"<br><br>").replace(/\n/g,"<br>");
+  return {html,off};
+}
+async function send(){
+  const inp=$("#chatInput"); const q=inp.value.trim(); if(!q) return;
+  inp.value=""; inp.style.height="auto";
+  state.chat.push({role:"u",text:q}); state.chat.push({role:"typing"}); renderChat();
+  const sel=selectedDocs();
+  try{
+    let prompt,system;
+    if(sel.length){
+      system=`You are TalentLens, a precise recruitment analyst. Answer using ONLY the provided documents when the question relates to them. Cite evidence inline as (DocName, p.N) using the exact document names and page numbers shown in the context. If the question is general and unrelated to the documents, you MAY answer from general knowledge but you MUST prefix your whole reply with [OFFDOC]. Be concise and direct. Never invent candidates, facts, or page numbers.`;
+      prompt=`CONTEXT DOCUMENTS:\n${docContext(sel)}\n\nQUESTION: ${q}`;
+    }else{
+      system=`You are TalentLens, a sharp recruitment co-pilot. No documents are loaded. Answer helpfully from general knowledge and prefix your reply with [OFFDOC].`;
+      prompt=q;
+    }
+    const ans=await gemini(prompt,{system,temp:0.4});
+    const {html,off}=formatAnswer(ans);
+    state.chat.pop(); state.chat.push({role:"a",html,off}); renderChat();
+  }catch(e){
+    state.chat.pop(); state.chat.push({role:"a",html:`<span style="color:var(--bad)">${e.message}</span>`,off:false}); renderChat();
+  }
+}
+
+/* ---------------- wiring ---------------- */
+$("#fileInput").addEventListener("change",e=>{ ingest([...e.target.files]); e.target.value=""; });
+$("#drop").addEventListener("click",()=>$("#fileInput").click());
+["dragover","dragenter"].forEach(ev=>$("#drop").addEventListener(ev,e=>{e.preventDefault();$("#drop").classList.add("drag");}));
+["dragleave","drop"].forEach(ev=>$("#drop").addEventListener(ev,e=>{e.preventDefault();$("#drop").classList.remove("drag");}));
+$("#drop").addEventListener("drop",e=>ingest([...e.dataTransfer.files]));
+
+$("#selectAll").onclick=()=>{ state.docs.forEach(d=>d.sel=true); renderDocs(); renderScope(); refreshTab(); };
+$("#clearSel").onclick=()=>{ state.docs.forEach(d=>d.sel=false); renderDocs(); renderScope(); refreshTab(); };
+
+const keyInput=$("#apiKey"); keyInput.value=state.apiKey;
+let keyTimer;
+keyInput.addEventListener("input",()=>{ state.apiKey=keyInput.value.trim(); store.set("tl_key",state.apiKey);
+  clearTimeout(keyTimer); $("#keyDot").className="dot"; keyTimer=setTimeout(checkKey,700); });
+
+$("#themeBtn").onclick=()=>{
+  const cur=document.documentElement.getAttribute("data-theme");
+  const next=cur==="dark"?"light":"dark";
+  document.documentElement.setAttribute("data-theme",next); store.set("tl_theme",next);
+  $("#themeIcon").innerHTML=next==="dark"?`<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>`:`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`;
+};
+$("#clearChat").onclick=()=>{ state.chat=[]; renderChat(); };
+const ci=$("#chatInput");
+ci.addEventListener("input",()=>{ ci.style.height="auto"; ci.style.height=Math.min(ci.scrollHeight,130)+"px"; });
+ci.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); send(); } });
+$("#sendBtn").onclick=send;
+
+/* init */
+(function init(){
+  const th=store.get("tl_theme","dark");
+  document.documentElement.setAttribute("data-theme",th);
+  $("#themeIcon").innerHTML = th==="dark"
+    ? `<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>`
+    : `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`;
+  renderDocs(); renderScope(); renderChat();
+  $("#view").innerHTML=heroEmpty(); bindHero();
+  if(state.apiKey) checkKey();
+})();
+</script>
+</body>
+</html>
