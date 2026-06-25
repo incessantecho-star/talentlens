@@ -61,6 +61,9 @@ button{font-family:inherit; cursor:pointer}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--ink-faint);transition:.3s;flex:none}
 .dot.on{background:var(--good);box-shadow:0 0 0 4px color-mix(in srgb,var(--good) 22%,transparent)}
 .dot.err{background:var(--bad);box-shadow:0 0 0 4px color-mix(in srgb,var(--bad) 22%,transparent)}
+.keyhelp{font-size:11.5px;color:var(--ink-faint);text-decoration:none;white-space:nowrap;padding:0 2px}
+.keyhelp:hover{color:var(--accent)}
+@media(max-width:920px){.keyhelp{display:none}}
 .iconbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--panel);
   color:var(--ink-dim);display:grid;place-items:center}
 .iconbtn:hover{color:var(--ink);border-color:var(--ink-faint)}
@@ -272,6 +275,7 @@ textarea#chatInput{flex:1;border:0;background:transparent;color:var(--ink);resiz
     <span class="dot" id="keyDot"></span>
     <input id="apiKey" type="password" placeholder="Gemini API key" autocomplete="off" spellcheck="false"/>
   </div>
+  <a class="keyhelp" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" title="Create a free Gemini API key in Google AI Studio">Get a free key →</a>
   <button class="iconbtn" id="themeBtn" title="Switch theme" aria-label="Switch theme">
     <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
   </button>
@@ -551,6 +555,7 @@ function heroEmpty(){
       <div><b>Skills Graph</b><small>See the skills landscape across your talent pool.</small></div>
     </div>
     <div style="margin-top:18px"><button class="btn primary" id="heroAdd">Add documents</button></div>
+    <p class="faint" style="font-size:11.5px;margin-top:12px">First time here? Paste a free Gemini API key (top right) — it stays in your browser and powers the analysis.</p>
   </div></div>`;
 }
 function bindHero(){ const b=$("#heroAdd"); if(b) b.onclick=()=>$("#fileInput").click(); }
