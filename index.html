@@ -3,932 +3,1196 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>TalentLens — Talent Intelligence Workspace</title>
-<meta name="description" content="Read CVs and job descriptions, score fit, shortlist candidates, and generate interview kits — grounded in your own documents." />
+<title>TalentLens — Talent Intelligence Console</title>
+<meta name="description" content="Read CVs and roles, score fit, rank shortlists, and generate interview kits — grounded in your own documents." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Bricolage+Grotesque:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 :root{
-  --bg:#101319; --bg-2:#161a22; --panel:#1a1f29; --panel-2:#202632;
-  --line:#2a3140; --line-soft:#222836;
-  --ink:#e9e8e3; --ink-dim:#a6adbb; --ink-faint:#6f7787;
-  --accent:#2dd4a7; --accent-deep:#0e9e7a; --accent-ink:#08130f;
-  --warn:#e0a64b; --bad:#e0795a; --good:#2dd4a7;
-  --shadow:0 1px 0 rgba(255,255,255,.03), 0 12px 30px -12px rgba(0,0,0,.6);
-  --r:14px; --r-sm:9px;
+  --bg:#0B0F14; --bg-2:#0E141B; --surface:#12181F; --surface-2:#161E27; --surface-3:#1b232e;
+  --line:#222c39; --line-soft:#1a222d;
+  --ink:#F4EADE; --ink-body:#D7DCE3; --ink-dim:#97a0b0; --ink-faint:#5c6675;
+  --accent:#2DD4BF; --accent-2:#7C5CFF; --accent-deep:#0e9e8c;
+  --gold:#E5B567; --gold-soft:#f0cd86;
+  --good:#2DD4BF; --warn:#E0A64B; --bad:#E0795A;
+  --halo-track:#202b38;
+  --r:18px; --r-sm:11px; --r-xs:8px;
+  --shadow:0 1px 0 rgba(255,255,255,.04), 0 20px 50px -24px rgba(0,0,0,.75);
+  --glow:0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent), 0 8px 30px -8px color-mix(in srgb,var(--accent) 35%,transparent);
+  --ease:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.34,1.56,.64,1);
 }
 html[data-theme="light"]{
-  --bg:#f5f3ee; --bg-2:#efece4; --panel:#ffffff; --panel-2:#faf8f3;
-  --line:#e2ddd2; --line-soft:#ebe7dd;
-  --ink:#1b1d22; --ink-dim:#5a6170; --ink-faint:#8a9099;
-  --accent:#0e9e7a; --accent-deep:#0a7a5e; --accent-ink:#ffffff;
-  --warn:#b9802a; --bad:#c2543a; --good:#0e9e7a;
-  --shadow:0 1px 0 rgba(255,255,255,.6), 0 14px 34px -16px rgba(40,40,30,.35);
+  --bg:#F3F0E9; --bg-2:#efebe2; --surface:#ffffff; --surface-2:#faf7f1; --surface-3:#f3efe6;
+  --line:#e3ddd0; --line-soft:#ece7db;
+  --ink:#171a1f; --ink-body:#2c313a; --ink-dim:#5a6373; --ink-faint:#8b93a0;
+  --accent:#0e9e8c; --accent-2:#2563eb; --accent-deep:#0a7a6c;
+  --gold:#a87f24; --gold-soft:#c69b3c;
+  --good:#0e9e8c; --warn:#b9802a; --bad:#c2543a;
+  --halo-track:#e3ddd0;
+  --shadow:0 1px 0 rgba(255,255,255,.6), 0 18px 44px -22px rgba(40,40,30,.4);
+  --glow:0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent), 0 8px 26px -8px color-mix(in srgb,var(--accent) 30%,transparent);
 }
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
-  margin:0; background:var(--bg); color:var(--ink);
+  margin:0; background:var(--bg); color:var(--ink-body);
   font-family:"Inter",system-ui,sans-serif; font-size:14px; line-height:1.5;
-  -webkit-font-smoothing:antialiased;
+  -webkit-font-smoothing:antialiased; overflow:hidden;
+  background-image:
+    radial-gradient(120% 80% at 12% -8%, color-mix(in srgb,var(--accent) 14%,transparent), transparent 55%),
+    radial-gradient(90% 70% at 100% 0%, color-mix(in srgb,var(--accent-2) 12%,transparent), transparent 50%),
+    radial-gradient(80% 90% at 50% 120%, color-mix(in srgb,var(--gold) 9%,transparent), transparent 55%);
+  background-attachment:fixed;
 }
-h1,h2,h3,.disp{font-family:"Space Grotesk",sans-serif; letter-spacing:-.01em}
-.mono{font-family:"IBM Plex Mono",monospace}
-button{font-family:inherit; cursor:pointer}
-::-webkit-scrollbar{width:10px;height:10px}
+/* grain overlay */
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+html[data-theme="light"] body::before{opacity:.35;mix-blend-mode:multiply}
+h1,h2,h3,.disp{font-family:"Space Grotesk",sans-serif; letter-spacing:-.02em; color:var(--ink)}
+.mono{font-family:"JetBrains Mono",monospace}
+.eyebrow{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-faint)}
+button{font-family:inherit;cursor:pointer}
+::-webkit-scrollbar{width:9px;height:9px}
 ::-webkit-scrollbar-thumb{background:var(--line);border-radius:20px;border:2px solid transparent;background-clip:content-box}
 ::-webkit-scrollbar-thumb:hover{background:var(--ink-faint)}
+*:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 /* ---------- Topbar ---------- */
-.topbar{
-  height:58px; display:flex; align-items:center; gap:14px;
-  padding:0 18px; border-bottom:1px solid var(--line);
-  background:linear-gradient(var(--bg-2),var(--bg-2)); position:sticky; top:0; z-index:30;
-}
-.brand{display:flex; align-items:center; gap:10px; user-select:none}
-.mark{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;
-  background:radial-gradient(120% 120% at 30% 20%, var(--accent), var(--accent-deep));
-  color:var(--accent-ink); box-shadow:0 4px 14px -4px var(--accent-deep)}
-.mark svg{width:18px;height:18px}
-.brand b{font-family:"Space Grotesk";font-weight:600;font-size:16px;letter-spacing:-.02em}
-.brand span{color:var(--ink-faint);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-left:2px}
-.topbar .grow{flex:1}
-.keywrap{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
-  border-radius:999px;padding:5px 6px 5px 12px}
-.keywrap input{background:transparent;border:0;color:var(--ink);outline:none;width:190px;font-size:12.5px;font-family:"IBM Plex Mono"}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--ink-faint);transition:.3s;flex:none}
+.topbar{position:relative;z-index:20;height:60px;display:flex;align-items:center;gap:14px;padding:0 20px;
+  border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg-2) 86%,transparent);backdrop-filter:blur(10px)}
+.brand{display:flex;align-items:center;gap:11px;user-select:none}
+.mark{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;position:relative;
+  background:conic-gradient(from 200deg,var(--accent),var(--accent-2),var(--gold),var(--accent));
+  box-shadow:0 6px 20px -6px color-mix(in srgb,var(--accent) 60%,transparent)}
+.mark::after{content:"";position:absolute;inset:3px;border-radius:7px;background:var(--bg-2)}
+.mark svg{position:relative;z-index:1;width:17px;height:17px;color:var(--ink)}
+.brand b{font-family:"Space Grotesk";font-weight:600;font-size:17px;letter-spacing:-.03em;color:var(--ink)}
+.brand .tagline{font-family:"JetBrains Mono";color:var(--ink-faint);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+.grow{flex:1}
+.cmdk-hint{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:9px;
+  padding:6px 10px;color:var(--ink-faint);font-size:12px}
+.cmdk-hint kbd{font-family:"JetBrains Mono";font-size:10.5px;background:var(--surface-3);border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:var(--ink-dim)}
+.cmdk-hint:hover{border-color:var(--ink-faint);color:var(--ink-dim)}
+.keywrap{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 7px 5px 12px}
+.keywrap:focus-within{border-color:var(--accent)}
+.keywrap input{background:transparent;border:0;color:var(--ink);outline:none;width:170px;font-size:12px;font-family:"JetBrains Mono"}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ink-faint);transition:.3s;flex:none}
 .dot.on{background:var(--good);box-shadow:0 0 0 4px color-mix(in srgb,var(--good) 22%,transparent)}
 .dot.err{background:var(--bad);box-shadow:0 0 0 4px color-mix(in srgb,var(--bad) 22%,transparent)}
-.keyhelp{font-size:11.5px;color:var(--ink-faint);text-decoration:none;white-space:nowrap;padding:0 2px}
+.keyhelp{font-size:11px;color:var(--ink-faint);text-decoration:none;white-space:nowrap}
 .keyhelp:hover{color:var(--accent)}
-@media(max-width:920px){.keyhelp{display:none}}
-.iconbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--panel);
-  color:var(--ink-dim);display:grid;place-items:center}
-.iconbtn:hover{color:var(--ink);border-color:var(--ink-faint)}
+.iconbtn{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink-dim);
+  display:grid;place-items:center;transition:.18s var(--ease)}
+.iconbtn:hover{color:var(--ink);border-color:var(--ink-faint);transform:translateY(-1px)}
 .iconbtn svg{width:17px;height:17px}
-.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:9px;
-  padding:7px 13px;font-size:13px;font-weight:500;display:inline-flex;gap:7px;align-items:center}
-.btn:hover{border-color:var(--ink-faint)}
+
+/* ---------- buttons ---------- */
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:8px 14px;
+  font-size:13px;font-weight:500;display:inline-flex;gap:7px;align-items:center;transition:.18s var(--ease)}
+.btn:hover{border-color:var(--ink-faint);transform:translateY(-1px)}
+.btn:active{transform:translateY(0) scale(.98)}
 .btn svg{width:15px;height:15px}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
-.btn.primary:hover{filter:brightness(1.06)}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-deep));border-color:transparent;color:#04201c;font-weight:600;box-shadow:0 8px 22px -10px color-mix(in srgb,var(--accent) 80%,transparent)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.gold{background:linear-gradient(135deg,var(--gold-soft),var(--gold));border-color:transparent;color:#2a1d04;font-weight:600}
 .btn.ghost{background:transparent}
-.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
 
 /* ---------- Layout ---------- */
-.app{display:grid;grid-template-columns:264px 1fr 360px;height:calc(100vh - 58px)}
+.app{position:relative;z-index:1;display:grid;grid-template-columns:266px 1fr 366px;height:calc(100vh - 60px);height:calc(100dvh - 60px)}
 .col{min-height:0;display:flex;flex-direction:column}
-.sidebar{border-right:1px solid var(--line);background:var(--bg-2)}
-.center{background:var(--bg);min-width:0}
-.chat{border-left:1px solid var(--line);background:var(--bg-2)}
+.rail{border-right:1px solid var(--line);background:color-mix(in srgb,var(--bg-2) 70%,transparent);min-height:0;overflow:hidden}
+.rail-section{flex:0 0 auto}
+.center{min-width:0}
+.chat{border-left:1px solid var(--line);background:color-mix(in srgb,var(--bg-2) 70%,transparent)}
 
-.pane-head{display:flex;align-items:center;gap:8px;padding:13px 15px;border-bottom:1px solid var(--line-soft)}
-.pane-head h2{margin:0;font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-dim);font-weight:600}
-.pane-head .grow{flex:1}
-.count{font-size:11px;color:var(--ink-faint);font-family:"IBM Plex Mono"}
+/* ---------- Pipeline nav ---------- */
+.rail-section{padding:14px 14px 6px}
+.rail-section .eyebrow{padding:0 4px 8px}
+.nav{display:flex;flex-direction:column;gap:2px;padding:0 10px}
+.navitem{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:10px;border:1px solid transparent;
+  color:var(--ink-dim);transition:.16s var(--ease);text-align:left;background:transparent;position:relative}
+.navitem .nbadge,.navitem .ico{flex:none}
+.navitem .num{font-family:"JetBrains Mono";font-size:10px;color:var(--ink-faint);width:18px}
+.navitem .ico{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line-soft);transition:.16s}
+.navitem .ico svg{width:15px;height:15px}
+.navitem .lab{font-size:13.5px;font-weight:500;color:var(--ink-body)}
+.navitem:hover{background:var(--surface)}
+.navitem.active{background:var(--surface);border-color:var(--line)}
+.navitem.active .ico{background:linear-gradient(135deg,var(--accent),var(--accent-deep));border-color:transparent;color:#04201c}
+.navitem.active .lab{color:var(--ink)}
+.navitem.active::before{content:"";position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:22px;border-radius:3px;background:var(--accent)}
 
-/* ---------- Sidebar / docs ---------- */
-.uploadzone{margin:12px;border:1.5px dashed var(--line);border-radius:var(--r);padding:18px 14px;text-align:center;
-  color:var(--ink-faint);transition:.2s;cursor:pointer}
-.uploadzone:hover,.uploadzone.drag{border-color:var(--accent);color:var(--ink-dim);background:color-mix(in srgb,var(--accent) 7%,transparent)}
-.uploadzone svg{width:22px;height:22px;margin-bottom:6px;opacity:.8}
-.uploadzone b{display:block;color:var(--ink);font-size:13px;font-weight:550}
-.uploadzone small{font-size:11px}
-.doclist{flex:1;overflow:auto;padding:4px 10px 14px}
-.doc{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:var(--r-sm);border:1px solid transparent;cursor:pointer;transition:.15s;position:relative}
-.doc:hover{background:var(--panel);border-color:var(--line-soft)}
-.doc.active{background:var(--panel);border-color:var(--line)}
+.rail-docs{flex:1;display:flex;flex-direction:column;min-height:0;border-top:1px solid var(--line-soft);margin-top:8px}
+.rail-docs .hd{display:flex;align-items:center;padding:13px 18px 7px}
+.rail-docs .hd .eyebrow{flex:1}
+.rail-docs .hd .count{font-family:"JetBrains Mono";font-size:11px;color:var(--ink-faint)}
+.uploadzone{margin:4px 14px 12px;border:1.5px dashed var(--line);border-radius:var(--r-sm);padding:15px 12px;text-align:center;color:var(--ink-faint);transition:.2s var(--ease);cursor:pointer}
+.uploadzone:hover,.uploadzone.drag{border-color:var(--accent);color:var(--ink-dim);background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.uploadzone svg{width:20px;height:20px;margin-bottom:4px;opacity:.85}
+.uploadzone b{display:block;color:var(--ink);font-size:12.5px;font-weight:550}
+.uploadzone small{font-size:10.5px}
+.doclist{flex:1 1 auto;min-height:0;overflow:auto;padding:0 10px 12px}
+.doc{display:flex;gap:9px;align-items:flex-start;padding:9px 10px;border-radius:var(--r-xs);border:1px solid transparent;cursor:pointer;transition:.15s var(--ease);position:relative}
+.doc:hover{background:var(--surface)}
+.doc.active{background:var(--surface);border-color:var(--line)}
 .doc.sel{box-shadow:inset 3px 0 0 var(--accent)}
-.doc .chk{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line);flex:none;margin-top:1px;display:grid;place-items:center;transition:.15s}
+.doc .chk{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--line);flex:none;margin-top:2px;display:grid;place-items:center;transition:.15s}
 .doc.sel .chk{background:var(--accent);border-color:var(--accent)}
-.doc .chk svg{width:12px;height:12px;color:var(--accent-ink);opacity:0}
+.doc .chk svg{width:11px;height:11px;color:#04201c;opacity:0}
 .doc.sel .chk svg{opacity:1}
 .doc .meta{min-width:0;flex:1}
-.doc .nm{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.doc .sub{font-size:11px;color:var(--ink-faint);display:flex;gap:6px;align-items:center;margin-top:2px}
-.tag{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;padding:2px 6px;border-radius:5px;border:1px solid var(--line)}
+.doc .nm{font-size:12.5px;font-weight:500;color:var(--ink-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc .sub{font-size:10.5px;color:var(--ink-faint);display:flex;gap:6px;align-items:center;margin-top:3px;font-family:"JetBrains Mono"}
+.tag{font-size:9px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;padding:2px 6px;border-radius:5px;border:1px solid var(--line);font-family:"JetBrains Mono"}
 .tag.cv{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
-.tag.jd{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,var(--line))}
-.doc .x{position:absolute;right:7px;top:7px;width:20px;height:20px;border-radius:5px;border:0;background:transparent;color:var(--ink-faint);display:none;place-items:center}
+.tag.jd{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,var(--line))}
+.doc .x{position:absolute;right:6px;top:6px;width:20px;height:20px;border-radius:5px;border:0;background:transparent;color:var(--ink-faint);display:none;place-items:center}
 .doc:hover .x{display:grid}
-.doc .x:hover{color:var(--bad);background:var(--panel-2)}
-.tagbtn{font-size:9.5px;border:1px solid var(--line);background:transparent;color:var(--ink-faint);border-radius:5px;padding:2px 6px;text-transform:uppercase;letter-spacing:.06em}
+.doc .x:hover{color:var(--bad);background:var(--surface-2)}
+.tagbtn{font-size:9px;border:1px solid var(--line);background:transparent;color:var(--ink-faint);border-radius:5px;padding:2px 5px;text-transform:uppercase;letter-spacing:.06em;font-family:"JetBrains Mono"}
 .tagbtn:hover{color:var(--ink);border-color:var(--ink-faint)}
-.sidebar-foot{padding:10px 12px;border-top:1px solid var(--line-soft);display:flex;gap:8px}
+.rail-foot{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line-soft);flex:0 0 auto}
 
-/* ---------- Center tabs ---------- */
-.tabs{display:flex;gap:2px;padding:8px 12px 0;border-bottom:1px solid var(--line-soft);overflow-x:auto}
-.tab{border:0;background:transparent;color:var(--ink-faint);padding:9px 14px;font-size:13px;font-weight:500;
-  border-radius:9px 9px 0 0;position:relative;white-space:nowrap;display:flex;gap:7px;align-items:center}
-.tab svg{width:15px;height:15px}
-.tab:hover{color:var(--ink-dim)}
-.tab.active{color:var(--ink)}
-.tab.active::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;background:var(--accent);border-radius:2px}
+/* ---------- Center / focus header ---------- */
+.focus-head{display:flex;align-items:flex-end;gap:16px;padding:22px 30px 18px;border-bottom:1px solid var(--line-soft)}
+.focus-head .h-main{flex:1;min-width:0}
+.focus-head h1{margin:0;font-size:30px;line-height:1.05;font-weight:600}
+.focus-head .sub{color:var(--ink-dim);font-size:13px;margin-top:6px}
+.focus-head .actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
 .view{flex:1;overflow:auto;padding:0}
-.view-pad{padding:22px 26px}
+.view-pad{padding:24px 30px 40px}
 
-/* empty states */
-.empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--ink-faint);padding:40px;gap:6px}
-.empty .ic{width:46px;height:46px;border-radius:13px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;margin-bottom:6px}
-.empty .ic svg{width:22px;height:22px;color:var(--ink-dim)}
-.empty h3{margin:4px 0 0;color:var(--ink);font-size:16px}
-.empty p{margin:0;max-width:330px;font-size:13px}
+/* ---------- Signature halo motif ---------- */
+.halo{--p:0;--c:var(--accent);position:relative;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:conic-gradient(var(--c) calc(var(--p)*1%), var(--halo-track) 0)}
+.halo::before{content:"";position:absolute;inset:-7px;border-radius:50%;border:1px solid color-mix(in srgb,var(--c) 22%,transparent);opacity:.6}
+.halo .core{border-radius:50%;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.halo .core b{font-family:"Space Grotesk";line-height:1;color:var(--ink)}
+.halo .core small{font-family:"JetBrains Mono";letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+.halo.lg{width:150px;height:150px}.halo.lg .core{width:120px;height:120px}.halo.lg .core b{font-size:42px}.halo.lg .core small{font-size:9px;margin-top:3px}
+.halo.md{width:92px;height:92px}.halo.md .core{width:72px;height:72px}.halo.md .core b{font-size:25px}.halo.md .core small{font-size:8px;margin-top:2px}
+.halo.sm{width:54px;height:54px}.halo.sm .core{width:42px;height:42px}.halo.sm .core b{font-size:15px}.halo.sm .core small{display:none}
 
-/* ---------- PDF reader ---------- */
-.reader-bar{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--line-soft);background:var(--bg-2)}
-.reader-bar .nm{font-size:13px;font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%}
-.pagectl{display:flex;align-items:center;gap:6px;margin-left:auto}
-.pagectl button{width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:var(--panel);color:var(--ink-dim);display:grid;place-items:center}
-.pagectl button:hover{color:var(--ink)}
-.pagectl .ind{font-size:12px;font-family:"IBM Plex Mono";color:var(--ink-dim);min-width:62px;text-align:center}
-.canvas-wrap{display:flex;justify-content:center;padding:22px;background:var(--bg)}
-#pdfCanvas{max-width:100%;border-radius:8px;box-shadow:var(--shadow);background:#fff}
+/* ---------- Bento ---------- */
+.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+.tile{background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--line);border-radius:var(--r);padding:18px;
+  box-shadow:var(--shadow);position:relative;overflow:hidden;animation:rise .5s var(--ease) backwards}
+.tile:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.tile .te{margin-bottom:10px}
+.tile.span2{grid-column:span 2}.tile.span3{grid-column:span 3}.tile.span4{grid-column:span 4}.tile.span6{grid-column:span 6}
+.tile.hero{grid-column:span 3;grid-row:span 2;display:flex;flex-direction:column;justify-content:space-between;
+  background:radial-gradient(120% 100% at 100% 0%, color-mix(in srgb,var(--accent) 12%,transparent), transparent 60%), color-mix(in srgb,var(--surface) 92%,transparent)}
+.bignum{font-family:"Space Grotesk";font-size:46px;font-weight:600;line-height:1;color:var(--ink)}
+.tile .label{font-size:12px;color:var(--ink-dim)}
+.stat-row{display:flex;align-items:baseline;gap:10px}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+.tile:nth-child(1){animation-delay:.02s}.tile:nth-child(2){animation-delay:.08s}.tile:nth-child(3){animation-delay:.14s}
+.tile:nth-child(4){animation-delay:.2s}.tile:nth-child(5){animation-delay:.26s}.tile:nth-child(6){animation-delay:.32s}.tile:nth-child(7){animation-delay:.38s}
 
-/* ---------- Cards / scores ---------- */
-.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+/* ---------- cards / scores ---------- */
+.card{background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--line);border-radius:var(--r);padding:20px;box-shadow:var(--shadow);animation:rise .45s var(--ease) backwards}
 .card + .card{margin-top:16px}
-.card h3{margin:0 0 3px;font-size:15px}
-.muted{color:var(--ink-dim)}
-.faint{color:var(--ink-faint)}
-.row{display:flex;gap:14px;align-items:center}
+.card h3{margin:0 0 2px;font-size:16px}
+.muted{color:var(--ink-dim)}.faint{color:var(--ink-faint)}
 .between{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.scorewrap{display:flex;align-items:center;gap:18px}
-.ring{--p:0;width:84px;height:84px;flex:none;border-radius:50%;display:grid;place-items:center;
-  background:conic-gradient(var(--accent) calc(var(--p)*1%), var(--line) 0)}
-.ring .inner{width:66px;height:66px;border-radius:50%;background:var(--panel);display:grid;place-items:center;flex-direction:column}
-.ring .inner b{font-family:"Space Grotesk";font-size:23px;line-height:1}
-.ring .inner small{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
-.verdict{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:6px;display:inline-block}
-.v-strong{color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}
+.scorewrap{display:flex;align-items:center;gap:22px}
+.verdict{font-family:"JetBrains Mono";font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:6px;display:inline-block}
+.v-strong{color:var(--gold);background:color-mix(in srgb,var(--gold) 15%,transparent)}
 .v-maybe{color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)}
 .v-weak{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
-.dim{margin-top:7px}
-.dim .lab{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px}
-.dim .lab .v{font-family:"IBM Plex Mono";color:var(--ink-dim)}
-.bar{height:7px;border-radius:6px;background:var(--line);overflow:hidden}
-.bar span{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent-deep),var(--accent));transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.dim{margin-top:9px}
+.dim .lab{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;color:var(--ink-body)}
+.dim .lab .v{font-family:"JetBrains Mono";color:var(--ink-dim)}
+.bar{height:7px;border-radius:6px;background:var(--halo-track);overflow:hidden}
+.bar span{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent-deep),var(--accent));transition:width .8s var(--ease)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.chip{font-size:11.5px;padding:4px 9px;border-radius:7px;border:1px solid var(--line);color:var(--ink-dim);background:var(--panel-2)}
-.chip.good{color:var(--good);border-color:color-mix(in srgb,var(--good) 35%,var(--line))}
+.chip{font-size:11.5px;padding:4px 9px;border-radius:7px;border:1px solid var(--line);color:var(--ink-dim);background:var(--surface-2)}
+.chip.good{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
 .chip.gap{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 35%,var(--line))}
 .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
 .select{position:relative}
-select{appearance:none;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:9px;
-  padding:8px 30px 8px 12px;font-family:inherit;font-size:13px;outline:none}
+select{appearance:none;background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:9px 32px 9px 13px;font-family:inherit;font-size:13px;outline:none}
 select:focus{border-color:var(--accent)}
-.select::after{content:"";position:absolute;right:12px;top:50%;width:7px;height:7px;border-right:2px solid var(--ink-faint);
-  border-bottom:2px solid var(--ink-faint);transform:translateY(-65%) rotate(45deg);pointer-events:none}
+.select::after{content:"";position:absolute;right:13px;top:50%;width:7px;height:7px;border-right:2px solid var(--ink-faint);border-bottom:2px solid var(--ink-faint);transform:translateY(-65%) rotate(45deg);pointer-events:none}
 
 /* table */
 table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint);font-weight:600;padding:0 12px 9px}
-td{padding:11px 12px;border-top:1px solid var(--line-soft);vertical-align:middle}
-tr:hover td{background:var(--panel-2)}
-.rank{font-family:"Space Grotesk";font-weight:600;color:var(--ink-faint);width:30px}
-.minibar{width:78px;height:6px;border-radius:5px;background:var(--line);overflow:hidden;display:inline-block;vertical-align:middle;margin-right:8px}
+th{text-align:left;font-family:"JetBrains Mono";font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint);font-weight:500;padding:0 12px 10px}
+td{padding:12px;border-top:1px solid var(--line-soft);vertical-align:middle;color:var(--ink-body)}
+tr:hover td{background:var(--surface-2)}
+.rank{font-family:"Space Grotesk";font-weight:600;color:var(--ink-faint);width:30px;font-size:15px}
+.rank.r1{color:var(--gold)}
+.minibar{width:74px;height:6px;border-radius:5px;background:var(--halo-track);overflow:hidden;display:inline-block;vertical-align:middle;margin-right:8px}
 .minibar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent-deep),var(--accent))}
 
-/* interview kit */
-.qblock{border:1px solid var(--line-soft);border-radius:var(--r-sm);padding:13px 15px;margin-top:10px;background:var(--panel-2)}
-.qblock .area{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:5px}
-.qblock .q{font-weight:500;font-size:14px}
-.qblock .gll{font-size:12px;color:var(--ink-dim);margin-top:6px;padding-left:11px;border-left:2px solid var(--line)}
+/* interview */
+.qblock{border:1px solid var(--line-soft);border-radius:var(--r-sm);padding:14px 16px;margin-top:10px;background:var(--surface-2)}
+.qblock .area{font-family:"JetBrains Mono";font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:6px}
+.qblock .q{font-weight:500;font-size:14.5px;color:var(--ink)}
+.qblock .gll{font-size:12.5px;color:var(--ink-dim);margin-top:7px;padding-left:12px;border-left:2px solid var(--line)}
 
 /* skills graph */
 #graphCanvas{width:100%;height:100%;display:block;cursor:grab}
-.graph-wrap{position:relative;height:calc(100vh - 58px - 41px)}
-.graph-legend{position:absolute;left:16px;bottom:16px;display:flex;gap:14px;flex-wrap:wrap;
-  background:color-mix(in srgb,var(--panel) 86%,transparent);backdrop-filter:blur(6px);
-  border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:11.5px}
+.graph-wrap{position:relative;height:calc(100vh - 60px - 92px);height:calc(100dvh - 60px - 92px)}
+.graph-legend{position:absolute;left:20px;bottom:20px;display:flex;gap:14px;flex-wrap:wrap;
+  background:color-mix(in srgb,var(--surface) 80%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:10px;padding:9px 13px;font-size:11.5px}
 .lg{display:flex;align-items:center;gap:6px;color:var(--ink-dim)}
 .lg i{width:10px;height:10px;border-radius:50%;display:inline-block}
 
+/* reader */
+.reader-bar{display:flex;align-items:center;gap:11px;padding:11px 24px;border-bottom:1px solid var(--line-soft)}
+.reader-bar .nm{font-size:13px;font-weight:550;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%}
+.pagectl{display:flex;align-items:center;gap:6px;margin-left:auto}
+.pagectl button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink-dim);display:grid;place-items:center}
+.pagectl button:hover{color:var(--ink)}
+.pagectl .ind{font-family:"JetBrains Mono";font-size:12px;color:var(--ink-dim);min-width:62px;text-align:center}
+.canvas-wrap{display:flex;justify-content:center;padding:26px;}
+#pdfCanvas{max-width:100%;border-radius:10px;box-shadow:var(--shadow);background:#fff}
+
+/* empty / hero */
+.empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--ink-faint);padding:40px;gap:6px}
+.empty .ic{width:48px;height:48px;border-radius:14px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;margin-bottom:6px}
+.empty .ic svg{width:22px;height:22px;color:var(--ink-dim)}
+.empty h3{margin:4px 0 0;color:var(--ink);font-size:17px}
+.empty p{margin:0;max-width:340px;font-size:13px}
+
+/* skeleton / loader */
+.loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;height:100%;color:var(--ink-faint)}
+.spin{width:30px;height:30px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:rot .8s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.skel{background:linear-gradient(100deg,var(--surface-2) 30%,var(--surface-3) 50%,var(--surface-2) 70%);background-size:200% 100%;animation:sh 1.3s infinite;border-radius:8px}
+@keyframes sh{to{background-position:-200% 0}}
+.skel-card{padding:20px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);margin-bottom:16px}
+.skel-row{display:flex;gap:18px;align-items:center}
+
 /* ---------- Chat ---------- */
+.chat-head{display:flex;align-items:center;gap:8px;padding:15px 16px;border-bottom:1px solid var(--line-soft)}
+.chat-head .eyebrow{flex:1}
+.scope{font-size:11px;color:var(--ink-faint);padding:9px 16px;border-bottom:1px solid var(--line-soft);font-family:"JetBrains Mono"}
+.scope b{color:var(--accent);font-weight:500}
 .chat-scroll{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
-.msg{max-width:92%;font-size:13.5px;line-height:1.55}
-.msg.u{align-self:flex-end;background:var(--accent);color:var(--accent-ink);padding:9px 13px;border-radius:13px 13px 4px 13px;font-weight:450}
+.msg{max-width:93%;font-size:13.5px;line-height:1.55}
+.msg.u{align-self:flex-end;background:linear-gradient(135deg,var(--accent),var(--accent-deep));color:#04201c;padding:9px 13px;border-radius:14px 14px 4px 14px;font-weight:450}
 .msg.a{align-self:flex-start}
-.msg.a .bubble{background:var(--panel);border:1px solid var(--line);padding:11px 14px;border-radius:13px 13px 13px 4px}
-.msg .who{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:5px;display:flex;align-items:center;gap:6px}
-.cite{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-family:"IBM Plex Mono";color:var(--accent);
-  background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
-  border-radius:5px;padding:1px 5px;margin:0 1px;cursor:pointer;vertical-align:baseline}
+.msg.a .bubble{background:var(--surface);border:1px solid var(--line);padding:11px 14px;border-radius:14px 14px 14px 4px;color:var(--ink-body)}
+.msg .who{font-family:"JetBrains Mono";font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px}
+.cite{display:inline-flex;align-items:center;gap:3px;font-family:"JetBrains Mono";font-size:10.5px;color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:5px;padding:1px 5px;margin:0 1px;cursor:pointer}
 .cite:hover{background:color-mix(in srgb,var(--accent) 22%,transparent)}
-.offdoc{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);margin-bottom:5px;
-  display:inline-flex;gap:5px;align-items:center}
-.scope{font-size:11px;color:var(--ink-faint);padding:7px 16px;border-bottom:1px solid var(--line-soft);background:var(--bg-2)}
-.scope b{color:var(--ink-dim);font-weight:550}
-.suggest{display:flex;flex-direction:column;gap:7px;margin-top:4px}
-.suggest button{text-align:left;border:1px solid var(--line);background:var(--panel);color:var(--ink-dim);
-  border-radius:9px;padding:9px 12px;font-size:12.5px}
-.suggest button:hover{border-color:var(--accent);color:var(--ink)}
+.offdoc{font-family:"JetBrains Mono";font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;display:inline-flex;gap:5px;align-items:center}
+.suggest{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+.suggest button{text-align:left;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-dim);border-radius:10px;padding:9px 12px;font-size:12.5px;transition:.16s var(--ease)}
+.suggest button:hover{border-color:var(--accent);color:var(--ink);transform:translateX(2px)}
 .composer{padding:12px;border-top:1px solid var(--line)}
-.composer .box{display:flex;gap:8px;align-items:flex-end;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 8px 8px 12px}
+.composer .box{display:flex;gap:8px;align-items:flex-end;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:8px 8px 8px 13px}
 .composer .box:focus-within{border-color:var(--accent)}
 textarea#chatInput{flex:1;border:0;background:transparent;color:var(--ink);resize:none;outline:none;font-family:inherit;font-size:13.5px;max-height:130px;line-height:1.5;padding:3px 0}
-.send{width:34px;height:34px;border-radius:9px;border:0;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none}
-.send:disabled{opacity:.4}
+.send{width:36px;height:36px;border-radius:10px;border:0;background:linear-gradient(135deg,var(--accent),var(--accent-deep));color:#04201c;display:grid;place-items:center;flex:none;transition:.16s var(--ease)}
+.send:hover{filter:brightness(1.08)}.send:disabled{opacity:.4}
 .send svg{width:17px;height:17px}
-
-/* spinner / typing */
 .typing{display:inline-flex;gap:4px;align-items:center}
 .typing i{width:6px;height:6px;border-radius:50%;background:var(--ink-faint);animation:bnc 1s infinite}
 .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
 @keyframes bnc{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
-.loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;height:100%;color:var(--ink-faint)}
-.spin{width:30px;height:30px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:rot .8s linear infinite}
-@keyframes rot{to{transform:rotate(360deg)}}
+
+/* command palette */
+.cmdk{position:fixed;inset:0;z-index:60;display:none;align-items:flex-start;justify-content:center;padding-top:14vh;
+  background:color-mix(in srgb,#000 55%,transparent);backdrop-filter:blur(4px)}
+.cmdk.open{display:flex;animation:fade .15s ease}
+@keyframes fade{from{opacity:0}}
+.cmdk-box{width:min(560px,92vw);background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 30px 80px -20px #000;overflow:hidden;animation:rise .2s var(--spring)}
+.cmdk-box input{width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);padding:16px 18px;font-family:inherit;font-size:15px;outline:none}
+.cmdk-list{max-height:330px;overflow:auto;padding:8px}
+.cmd{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;color:var(--ink-body)}
+.cmd .ic{width:30px;height:30px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line-soft);display:grid;place-items:center}
+.cmd .ic svg{width:15px;height:15px;color:var(--ink-dim)}
+.cmd .num{font-family:"JetBrains Mono";font-size:10px;color:var(--ink-faint);margin-left:auto}
+.cmd.sel,.cmd:hover{background:var(--surface-2)}
+.cmd.sel .ic{border-color:var(--accent);color:var(--accent)}
 
 /* toast */
-#toasts{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;gap:8px;align-items:center}
-.toast{background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px;padding:10px 15px;font-size:13px;display:flex;gap:9px;align-items:center;animation:up .25s ease}
+#toasts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:11px;padding:10px 15px;font-size:13px;display:flex;gap:9px;align-items:center;animation:rise .25s var(--spring)}
 .toast.err{border-color:color-mix(in srgb,var(--bad) 50%,var(--line))}
 .toast .d{width:7px;height:7px;border-radius:50%;background:var(--accent)}
 .toast.err .d{background:var(--bad)}
-@keyframes up{from{transform:translateY(8px);opacity:0}}
 
-/* hero (no docs) */
-.hero{max-width:520px}
-.hero .kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:600}
-.hero h2{font-size:27px;margin:8px 0 10px;line-height:1.12}
-.feat{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px;text-align:left}
-.feat div{border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:var(--panel)}
-.feat b{font-size:12.5px;display:block}
-.feat small{color:var(--ink-faint);font-size:11.5px}
+.hero-feat{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:20px;text-align:left;max-width:480px}
+.hero-feat div{border:1px solid var(--line);border-radius:12px;padding:13px 15px;background:var(--surface)}
+.hero-feat b{font-size:13px;display:block;color:var(--ink)}
+.hero-feat small{color:var(--ink-faint);font-size:11.5px}
 
-@media(max-width:1080px){.app{grid-template-columns:230px 1fr 320px}}
-@media(max-width:920px){.app{grid-template-columns:1fr}.sidebar,.chat{display:none}.keywrap input{width:120px}}
-*:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+/* mobile drawer triggers (hidden on desktop) */
+.mobi{display:none}
+.scrim{position:fixed;inset:0;top:60px;z-index:35;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s ease}
+.scrim.show{opacity:1;pointer-events:auto}
+
+@media(max-width:1120px){.app{grid-template-columns:230px 1fr 320px}.bento{grid-template-columns:repeat(4,1fr)}.tile.hero,.tile.span3,.tile.span4{grid-column:span 4}.tile.span2{grid-column:span 2}}
+@media(max-width:920px){
+  .app{grid-template-columns:1fr}
+  .mobi{display:grid}
+  .cmdk-hint,.keyhelp{display:none}
+  .keywrap input{width:96px}
+  .rail,.chat{position:fixed;top:60px;bottom:0;z-index:40;width:300px;max-width:86vw;overflow:auto;
+    transition:transform .28s var(--ease);box-shadow:0 0 60px -10px rgba(0,0,0,.6);background:var(--bg-2)}
+  .rail{left:0;transform:translateX(-101%);border-right:1px solid var(--line)}
+  .chat{right:0;transform:translateX(101%);border-left:1px solid var(--line)}
+  .rail.open,.chat.open{transform:none}
+  .bento{grid-template-columns:repeat(2,1fr)}
+  .tile,.tile.hero,.tile.span2,.tile.span3,.tile.span4{grid-column:span 2}
+  .focus-head{padding:18px 18px 14px}.focus-head h1{font-size:24px}
+  .view-pad{padding:18px 16px 36px}
+  .scorewrap{gap:14px}
+}
+@media(max-width:560px){
+  .bento{grid-template-columns:1fr}.tile,.tile.hero,.tile.span2,.tile.span3,.tile.span4{grid-column:span 1}
+  .topbar{padding:0 12px;gap:8px}.brand .tagline{display:none}
+  .focus-head h1{font-size:21px}
+}
+/* ===== REGIONAL TOUCHES ===== */
+.ar-mark{font-family:"IBM Plex Sans Arabic",sans-serif;font-size:13px;font-weight:500;color:var(--ink-faint);margin-left:9px;opacity:.8;letter-spacing:0}
+.center{position:relative;overflow:hidden}
+.center::after{content:"";position:absolute;right:-70px;bottom:-70px;width:360px;height:360px;pointer-events:none;z-index:0;opacity:.045;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='0.8'%3E%3Crect x='22' y='22' width='56' height='56'/%3E%3Crect x='22' y='22' width='56' height='56' transform='rotate(45 50 50)'/%3E%3Ccircle cx='50' cy='50' r='30'/%3E%3Ccircle cx='50' cy='50' r='40'/%3E%3C/g%3E%3C/svg%3E");
+  background-size:contain;background-repeat:no-repeat}
+html[data-theme="light"] .center::after{filter:invert(1);opacity:.06}
+.center > *{position:relative;z-index:1}
+.rail-sig{display:flex;align-items:center;gap:7px;padding:9px 16px 13px;border-top:1px solid var(--line-soft);flex:0 0 auto;
+  font-family:"JetBrains Mono";font-size:9.5px;letter-spacing:.04em;color:var(--ink-faint)}
+.khatam-ic{width:11px;height:11px;flex:none;color:var(--gold);opacity:.85}
+@media(max-width:560px){.ar-mark{display:none}}
+
+/* ===== LENS NAV + POLISH ===== */
+.navitem{overflow:hidden;isolation:isolate}
+.navitem::after{content:"";position:absolute;inset:0;border-radius:10px;pointer-events:none;z-index:-1;opacity:0;transition:opacity .28s var(--ease);
+  background:radial-gradient(150px circle at var(--mx,50%) var(--my,50%), color-mix(in srgb,var(--accent) 28%,transparent), transparent 62%)}
+.navitem:hover::after{opacity:1}
+.navitem:hover{background:rgba(255,255,255,.035) !important;transform:translateX(3px)}
+.navitem:hover .ico{border-color:color-mix(in srgb,var(--accent) 55%,transparent);color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent),0 0 18px -5px var(--accent)}
+.navitem:hover .lab{color:var(--ink)}
+.navitem:hover .num{color:var(--accent)}
+.navitem.active::after{opacity:.45}
+.navitem.active{box-shadow:0 0 28px -14px color-mix(in srgb,var(--accent) 80%,transparent)}
+
+.tile{transition:transform .22s var(--ease),border-color .22s var(--ease),box-shadow .22s var(--ease)}
+.tile:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--accent) 38%,var(--line)) !important;box-shadow:var(--shadow),0 0 34px -14px color-mix(in srgb,var(--accent) 55%,transparent)}
+.hero-feat div{transition:.2s var(--ease);cursor:default}
+.hero-feat div:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--accent) 35%,var(--line));box-shadow:0 0 24px -12px color-mix(in srgb,var(--accent) 45%,transparent)}
+
+/* footer signature tidy */
+.rail-sig{align-items:center;gap:9px;padding:11px 16px 14px;line-height:1.3}
+.rail-sig .sig-txt{display:flex;flex-direction:column;min-width:0}
+.rail-sig .sig-txt b{color:var(--ink-dim);font-weight:600;letter-spacing:.02em;font-size:10px;white-space:nowrap}
+.rail-sig .sig-txt span{color:var(--ink-faint);font-size:9px;letter-spacing:.05em}
+.khatam-ic{width:14px;height:14px}
+.uploadzone{padding:13px 12px;margin-bottom:8px}
+
+/* ===== POLISHED EMPTY HERO ===== */
+.hero-stage{display:flex;flex-direction:column;align-items:center;max-width:600px;text-align:center;padding:10px 0 20px}
+.hero-orb{position:relative;width:128px;height:128px;display:grid;place-items:center}
+.hero-orb .orb-core{width:80px;height:80px;border-radius:50%;
+  background:radial-gradient(circle at 38% 30%, color-mix(in srgb,#fff 78%,var(--accent)) 0%, var(--accent) 40%, var(--accent-deep) 82%);
+  box-shadow:0 0 56px -6px var(--accent), inset 0 -7px 18px -6px rgba(0,0,0,.55), inset 0 5px 14px -5px rgba(255,255,255,.7)}
+.hero-orb .orb-ring{position:absolute;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--accent) 48%,transparent);inset:6px;animation:orbPulse 3.2s ease-in-out infinite}
+.hero-orb .orb-ring.two{inset:-10px;border-style:dashed;border-color:color-mix(in srgb,var(--accent) 24%,transparent);animation:orbSpin 20s linear infinite}
+.hero-orb .orb-kicker{position:absolute;bottom:-24px;font-family:"JetBrains Mono";font-size:9px;letter-spacing:.3em;color:var(--accent);opacity:.9}
+@keyframes orbPulse{0%,100%{transform:scale(1);opacity:.65}50%{transform:scale(1.09);opacity:1}}
+@keyframes orbSpin{to{transform:rotate(360deg)}}
+.hero-kicker{margin-top:42px;font-family:"JetBrains Mono";font-size:11px;letter-spacing:.26em;text-transform:uppercase;font-weight:500;
+  color:transparent;background:linear-gradient(90deg,var(--accent),var(--gold-soft));-webkit-background-clip:text;background-clip:text}
+.hero-title{font-family:"Bricolage Grotesque","Space Grotesk",sans-serif;font-weight:700;font-size:44px;line-height:1.02;letter-spacing:-.035em;margin:14px 0 14px;
+  background:linear-gradient(118deg,#ffffff 26%, color-mix(in srgb,var(--accent) 92%,#fff) 104%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-sub{color:var(--ink-dim);max-width:440px;font-size:14px;line-height:1.6;margin:0}
+@media(max-width:560px){.hero-title{font-size:30px}}
+
+/* ===== UX FIX STYLES ===== */
+.keycard{display:flex;gap:18px;align-items:flex-start;max-width:620px}
+.keycard .kc-ic{width:46px;height:46px;flex:none;border-radius:12px;display:grid;place-items:center;color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 14%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)}
+.keycard .kc-ic svg{width:22px;height:22px}
+.keycard h3{font-size:16px}
+.nav-hint{margin-left:auto;font-family:"JetBrains Mono";font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;
+  color:var(--accent-ink,#04201c);background:linear-gradient(135deg,var(--accent),var(--accent-deep));padding:2px 7px;border-radius:6px;
+  animation:hintPulse 2s ease-in-out infinite}
+@keyframes hintPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 45%,transparent)}50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 0%,transparent)}}
+.step-el{font-family:"JetBrains Mono";font-size:10px;color:var(--accent);margin-left:8px;opacity:.85}
+
+body{background:#070A12 !important;background-image:none !important}
+.aurora{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;contain:strict}
+.aurora .blob{position:absolute;border-radius:50%;filter:blur(85px);opacity:.55;will-change:transform}
+.aurora .b1{width:50vw;height:50vw;background:#2DD4BF;top:-12vw;left:-10vw;animation:drift1 28s ease-in-out infinite}
+.aurora .b2{width:46vw;height:46vw;background:#7C5CFF;top:8vw;right:-12vw;animation:drift2 34s ease-in-out infinite}
+.aurora .b3{width:42vw;height:42vw;background:#3B82F6;bottom:-14vw;left:16vw;animation:drift3 31s ease-in-out infinite}
+.aurora .b4{width:32vw;height:32vw;background:#E5B567;bottom:4vw;right:12vw;opacity:.38;animation:drift1 38s ease-in-out infinite reverse}
+@keyframes drift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(6vw,4vw) scale(1.14)}}
+@keyframes drift2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-5vw,6vw) scale(1.08)}}
+@keyframes drift3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(5vw,-5vw) scale(1.16)}}
+html[data-theme="light"] .aurora{filter:none}
+html[data-theme="light"] body{background:#EDEBF2 !important}
+html[data-theme="light"] .aurora .blob{opacity:.4}
+
+/* glass surfaces */
+.topbar{background:rgba(10,13,22,.5) !important;-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5)}
+.rail,.chat{background:rgba(11,15,25,.42) !important;-webkit-backdrop-filter:blur(22px) saturate(1.4);backdrop-filter:blur(22px) saturate(1.4)}
+.tile,.card,.cmdk-box,.qblock,.skel-card,.step-detail{background:rgba(255,255,255,.05) !important;-webkit-backdrop-filter:blur(16px) saturate(1.3);backdrop-filter:blur(16px) saturate(1.3);border-color:rgba(255,255,255,.10)}
+.tile.hero{background:linear-gradient(135deg,rgba(45,212,191,.14),rgba(124,92,255,.10)),rgba(255,255,255,.05) !important}
+.final-card{background:linear-gradient(135deg,rgba(45,212,191,.12),rgba(229,181,103,.08)),rgba(255,255,255,.05) !important;border-color:color-mix(in srgb,var(--accent) 45%,transparent) !important;box-shadow:0 0 60px -22px color-mix(in srgb,var(--accent) 70%,transparent)}
+.composer .box,.keywrap,.btn,.iconbtn,select,#agentGoal{background:rgba(255,255,255,.055) !important}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-deep)) !important}
+.btn.gold{background:linear-gradient(135deg,var(--gold-soft),var(--gold)) !important}
+.navitem.active{background:rgba(255,255,255,.06) !important}
+.navitem .ico{background:rgba(255,255,255,.05)}
+.halo .core{background:rgba(14,18,30,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.scope,.reader-bar{background:rgba(255,255,255,.03) !important}
+.uploadzone{background:rgba(255,255,255,.02)}
+html[data-theme="light"] .tile,html[data-theme="light"] .card,html[data-theme="light"] .cmdk-box{background:rgba(255,255,255,.7) !important;border-color:rgba(20,20,40,.08)}
+html[data-theme="light"] .topbar{background:rgba(255,255,255,.6) !important}
+html[data-theme="light"] .rail,html[data-theme="light"] .chat{background:rgba(255,255,255,.5) !important}
+html[data-theme="light"] .halo .core{background:rgba(255,255,255,.85)}
+
+/* agent trace */
+.agent-goal .goal-row{display:flex;gap:10px;margin-top:9px}
+#agentGoal{flex:1;border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:10px 13px;font-family:inherit;font-size:13.5px;outline:none}
+#agentGoal:focus{border-color:var(--accent)}
+.agent-trace{margin-top:18px}
+.step{display:flex;gap:14px}
+.step-rail{display:flex;flex-direction:column;align-items:center;padding-top:2px}
+.step-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--line);background:rgba(255,255,255,.05);flex:none;transition:.3s}
+.step.running .step-dot{border-color:var(--accent);background:var(--accent);animation:apulse 1.3s infinite}
+.step.done .step-dot{border-color:var(--accent);background:var(--accent)}
+.step.error .step-dot{border-color:var(--bad);background:var(--bad)}
+.step-line{flex:1;width:2px;background:var(--line);margin:4px 0;min-height:16px}
+.step.done .step-line{background:linear-gradient(var(--accent),var(--line))}
+.step-body{flex:1;min-width:0;padding-bottom:22px}
+.step-head{display:flex;align-items:center;gap:10px}
+.step-n{font-family:"JetBrains Mono";font-size:9.5px;letter-spacing:.12em;color:var(--ink-faint)}
+.step-label{font-weight:600;font-size:14px;color:var(--ink)}
+.step-status{margin-left:auto;font-family:"JetBrains Mono";font-size:10.5px;color:var(--ink-faint)}
+.step-detail{margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+@keyframes apulse{0%,100%{box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 26%,transparent)}50%{box-shadow:0 0 0 10px color-mix(in srgb,var(--accent) 6%,transparent)}}
+.plan{margin:0;padding-left:18px}.plan li{margin:4px 0;color:var(--ink-body)}
+.mini-rank{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line-soft)}
+.mini-rank:first-of-type{border-top:0}
+.mini-rank .mr-n{font-family:"JetBrains Mono";font-size:11px;color:var(--ink-faint);width:16px}
+.mini-bar{flex:1;height:6px;border-radius:5px;background:var(--halo-track);overflow:hidden}
+.mini-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent-deep),var(--accent))}
+
+@media(prefers-reduced-motion:reduce){.aurora .blob{animation:none !important}.step.running .step-dot{animation:none}}
+@media(max-width:560px){.aurora .b4{display:none}.tile,.card,.cmdk-box{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(18,22,34,.86) !important}.agent-goal .goal-row{flex-direction:column}}
+
 </style>
 </head>
 <body>
+<div class="aurora"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span><span class="blob b4"></span></div>
 <div class="topbar">
   <div class="brand">
-    <div class="mark"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2.2"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></div>
-    <b>TalentLens</b><span>UAE</span>
+    <div class="mark"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2.4"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></div>
+    <div><b>TalentLens</b><span class="ar-mark" dir="rtl" lang="ar">ذكاء المواهب</span><div class="tagline">Talent intelligence · UAE</div></div>
   </div>
   <div class="grow"></div>
-  <div class="keywrap" title="Your key is used only in your browser to call the Gemini API. It is never sent anywhere else.">
+  <button class="iconbtn mobi" id="railToggle" title="Documents & stages" aria-label="Open menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </button>
+  <button class="cmdk-hint" id="cmdkOpen">Search & actions <kbd>⌘K</kbd></button>
+  <div class="keywrap" title="Your key is used only in your browser to call the Gemini API.">
     <span class="dot" id="keyDot"></span>
     <input id="apiKey" type="password" placeholder="Gemini API key" autocomplete="off" spellcheck="false"/>
   </div>
-  <a class="keyhelp" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" title="Create a free Gemini API key in Google AI Studio">Get a free key →</a>
+  <a class="keyhelp" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Get key →</a>
+  <button class="iconbtn mobi" id="chatToggle" title="Chat" aria-label="Open chat">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-5.2A8 8 0 1 1 21 12Z"/></svg>
+  </button>
   <button class="iconbtn" id="themeBtn" title="Switch theme" aria-label="Switch theme">
     <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
   </button>
 </div>
 
 <div class="app">
-  <!-- SIDEBAR -->
-  <div class="col sidebar">
-    <div class="pane-head"><h2>Documents</h2><span class="grow"></span><span class="count" id="docCount">0</span></div>
-    <div class="uploadzone" id="drop">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>
-      <b>Add CVs & job descriptions</b>
-      <small>Drop PDFs here or click to browse</small>
+  <!-- RAIL -->
+  <div class="col rail">
+    <div class="rail-section">
+      <div class="eyebrow">Pipeline</div>
+      <div class="nav" id="nav"></div>
     </div>
-    <input type="file" id="fileInput" accept="application/pdf" multiple hidden/>
-    <div class="doclist" id="docList"></div>
-    <div class="sidebar-foot">
-      <button class="btn ghost" id="selectAll" style="flex:1;justify-content:center">Select all</button>
-      <button class="btn ghost" id="clearSel" style="flex:1;justify-content:center">Clear</button>
+    <div class="rail-docs">
+      <div class="hd"><span class="eyebrow">Documents</span><span class="count" id="docCount">0</span></div>
+      <div class="uploadzone" id="drop">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>
+        <b>Add CVs & roles</b><small>Drop PDFs or click to browse</small>
+      </div>
+      <input type="file" id="fileInput" accept="application/pdf" multiple hidden/>
+      <div class="doclist" id="docList"></div>
+      <div class="rail-foot">
+        <button class="btn ghost" id="selectAll" style="flex:1;justify-content:center;font-size:12px">Select all</button>
+        <button class="btn ghost" id="clearSel" style="flex:1;justify-content:center;font-size:12px">Clear</button>
+      </div>
     </div>
   </div>
 
   <!-- CENTER -->
   <div class="col center">
-    <div class="tabs" id="tabs">
-      <button class="tab active" data-tab="reader"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>Reader</button>
-      <button class="tab" data-tab="match"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v18M5 8l7-5 7 5M5 8v8l7 5 7-5V8"/></svg>Fit Score</button>
-      <button class="tab" data-tab="shortlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Shortlist</button>
-      <button class="tab" data-tab="interview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 10h8M8 14h5"/><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-5.2A8 8 0 1 1 21 12Z"/></svg>Interview Kit</button>
-      <button class="tab" data-tab="skills"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="7" r="2.5"/><circle cx="12" cy="17" r="2.5"/><path d="M8 7l8 8M16 8l-4 7"/></svg>Skills Graph</button>
-    </div>
+    <div id="focusHead"></div>
     <div class="view" id="view"></div>
   </div>
 
   <!-- CHAT -->
   <div class="col chat">
-    <div class="pane-head"><h2>Ask TalentLens</h2><span class="grow"></span>
-      <button class="iconbtn" id="clearChat" title="Clear conversation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+    <div class="chat-head"><span class="eyebrow">Ask TalentLens</span>
+      <button class="iconbtn" id="clearChat" title="Clear conversation" style="width:30px;height:30px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
     </div>
-    <div class="scope" id="scope">No documents selected — answering from general knowledge.</div>
+    <div class="scope" id="scope"></div>
     <div class="chat-scroll" id="chatScroll"></div>
-    <div class="composer">
-      <div class="box">
-        <textarea id="chatInput" rows="1" placeholder="Ask about the selected documents…"></textarea>
-        <button class="send" id="sendBtn" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-      </div>
-    </div>
+    <div class="composer"><div class="box">
+      <textarea id="chatInput" rows="1" placeholder="Ask about the selected documents…"></textarea>
+      <button class="send" id="sendBtn" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    </div></div>
   </div>
 </div>
+
+<div class="scrim" id="scrim"></div>
+
+<!-- command palette -->
+<div class="cmdk" id="cmdk"><div class="cmdk-box">
+  <input id="cmdkInput" placeholder="Jump to a stage or run an action…" autocomplete="off"/>
+  <div class="cmdk-list" id="cmdkList"></div>
+</div></div>
 
 <div id="toasts"></div>
 
 <script>
-pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-const MODEL = "gemini-2.5-flash";
-const $ = s => document.querySelector(s);
+pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+const MODEL="gemini-2.5-flash";
+const $=s=>document.querySelector(s);
+const reduce=window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+function esc(s){return (s==null?"":String(s)).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 
-/* ---------------- state ---------------- */
-const store = {
-  get(k,d){ try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d} },
-  set(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const state={apiKey:store.get("tl_key",""),docs:[],activeId:null,tab:"overview",pdf:null,pageNum:1,chat:[],cache:{},agentSeen:false};
+
+const STAGES=[
+  {id:"overview",num:"00",label:"Overview",icon:`<path d="M4 13h7V4H4zM13 20h7v-9h-7zM13 4v5h7V4zM4 20h7v-5H4z"/>`},
+  {id:"agent",num:"01",label:"AI Agent",icon:`<circle cx="12" cy="12" r="3.4"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22M4.9 4.9l2.5 2.5M16.6 16.6l2.5 2.5M19.1 4.9l-2.5 2.5M7.4 16.6l-2.5 2.5"/>`},
+  {id:"reader",num:"02",label:"Documents",icon:`<path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>`},
+  {id:"match",num:"03",label:"Fit Score",icon:`<path d="M12 3v18M5 8l7-5 7 5M5 8v8l7 5 7-5V8"/>`},
+  {id:"shortlist",num:"04",label:"Shortlist",icon:`<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>`},
+  {id:"interview",num:"05",label:"Interview Kit",icon:`<path d="M8 10h8M8 14h5"/><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-5.2A8 8 0 1 1 21 12Z"/>`},
+  {id:"skills",num:"06",label:"Skills Graph",icon:`<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="7" r="2.5"/><circle cx="12" cy="17" r="2.5"/><path d="M8 7l8 8M16 8l-4 7"/>`}
+];
+const HEADERS={
+  overview:["Command Center","Your live view of the talent pool and pipeline."],
+  agent:["AI Agent","Give the agent a goal \u2014 it plans, scores, cross-checks, and recommends."],
+  reader:["Documents","Read the source CVs and roles, page by page."],
+  match:["Fit Score","Score candidates against a role across weighted dimensions."],
+  shortlist:["Shortlist","Every candidate ranked against one job, at a glance."],
+  interview:["Interview Kit","Questions tailored to each candidate's specific gaps."],
+  skills:["Skills Graph","The skills landscape across your selected talent pool."]
 };
-const state = {
-  apiKey: store.get("tl_key",""),
-  docs: [],            // {id,name,type,pages:[{n,text}],buf,active,sel,numPages}
-  activeId: null,
-  tab: "reader",
-  pdf: null, pageNum: 1,
-  chat: [],            // {role, html|text, off}
-  cache: {}            // analysis caches keyed by signature
-};
 
-/* ---------------- toast ---------------- */
-function toast(msg,err){
-  const t=document.createElement("div");
-  t.className="toast"+(err?" err":"");
-  t.innerHTML=`<span class="d"></span>${msg}`;
-  $("#toasts").appendChild(t);
-  setTimeout(()=>{t.style.opacity="0";t.style.transition="opacity .3s";setTimeout(()=>t.remove(),300)},err?4200:2600);
-}
+/* ---------- toast ---------- */
+function toast(msg,err){const t=document.createElement("div");t.className="toast"+(err?" err":"");t.innerHTML=`<span class="d"></span>${msg}`;$("#toasts").appendChild(t);setTimeout(()=>{t.style.opacity="0";t.style.transition="opacity .3s";setTimeout(()=>t.remove(),300)},err?4200:2400);}
 
-/* ---------------- Gemini ---------------- */
-function apiErr(txt,status){
-  try{const j=JSON.parse(txt);const m=j.error?.message||"";
-    if(status===400&&/api key/i.test(m)) return "That API key isn’t valid. Check it in Google AI Studio.";
-    if(status===429) return "Rate limit reached on this key. Wait a moment, or use a fresh key.";
-    if(status===403) return "This key isn’t authorised for the Gemini API. Enable it in AI Studio.";
-    return m||("Request failed ("+status+")");
-  }catch(e){ return "Request failed ("+status+")"; }
-}
+/* ---------- Gemini ---------- */
+function apiErr(txt,status){try{const j=JSON.parse(txt);const m=j.error?.message||"";
+  if(status===400&&/api key/i.test(m))return"That API key isn’t valid. Check it in Google AI Studio.";
+  if(status===429)return"Rate limit reached on this key. Wait a moment, or use a fresh key.";
+  if(status===403)return"This key isn’t authorised for the Gemini API. Enable it in AI Studio.";
+  return m||("Request failed ("+status+")");}catch(e){return"Request failed ("+status+")";}}
 async function gemini(prompt,{json=false,system=null,temp=0.3}={}){
-  if(!state.apiKey) throw new Error("Add your Gemini API key (top right) to start.");
+  if(!state.apiKey)throw new Error("Add your Gemini API key (top right) to start.");
   const url=`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(state.apiKey)}`;
   const body={contents:[{role:"user",parts:[{text:prompt}]}],generationConfig:{temperature:temp}};
-  if(system) body.systemInstruction={parts:[{text:system}]};
-  if(json) body.generationConfig.responseMimeType="application/json";
+  if(system)body.systemInstruction={parts:[{text:system}]};
+  if(json)body.generationConfig.responseMimeType="application/json";
   const res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-  if(!res.ok){ throw new Error(apiErr(await res.text(),res.status)); }
-  const data=await res.json();
-  const cand=data?.candidates?.[0];
-  if(cand?.finishReason==="SAFETY") throw new Error("The model declined to answer that. Try rephrasing.");
-  return (cand?.content?.parts||[]).map(p=>p.text).filter(Boolean).join("");
+  if(!res.ok)throw new Error(apiErr(await res.text(),res.status));
+  const data=await res.json();const cand=data?.candidates?.[0];
+  if(cand?.finishReason==="SAFETY")throw new Error("The model declined to answer that. Try rephrasing.");
+  return(cand?.content?.parts||[]).map(p=>p.text).filter(Boolean).join("");
 }
-function parseJSON(txt){
-  let t=txt.trim().replace(/^```json\s*/i,"").replace(/^```\s*/,"").replace(/```$/,"").trim();
-  try{return JSON.parse(t)}catch(e){
-    const a=t.indexOf("{"),b=t.lastIndexOf("}"),c=t.indexOf("["),d=t.lastIndexOf("]");
-    const s=(c>-1&&(c<a||a<0))?t.slice(c,d+1):t.slice(a,b+1);
-    return JSON.parse(s);
-  }
-}
-async function checkKey(){
-  const dot=$("#keyDot"); dot.className="dot";
-  if(!state.apiKey) return;
-  try{ await gemini("ping",{temp:0}); dot.className="dot on"; toast("Gemini connected"); }
-  catch(e){ dot.className="dot err"; toast(e.message,true); }
-}
+function parseJSON(txt){let t=txt.trim().replace(/^```json\s*/i,"").replace(/^```\s*/,"").replace(/```$/,"").trim();
+  try{return JSON.parse(t)}catch(e){const a=t.indexOf("{"),b=t.lastIndexOf("}"),c=t.indexOf("["),d=t.lastIndexOf("]");
+  const s=(c>-1&&(c<a||a<0))?t.slice(c,d+1):t.slice(a,b+1);return JSON.parse(s);}}
+async function checkKey(){const dot=$("#keyDot");dot.className="dot";if(!state.apiKey)return;
+  try{await gemini("ping",{temp:0});dot.className="dot on";toast("Gemini connected");}catch(e){dot.className="dot err";toast(e.message,true);}}
 
-/* ---------------- documents ---------------- */
+/* ---------- score helpers / halo ---------- */
+function scoreColor(v){return v>=85?"var(--gold)":v>=60?"var(--accent)":v>=40?"var(--warn)":"var(--bad)";}
+function vClass(v){return /strong/i.test(v)?"v-strong":/weak/i.test(v)?"v-weak":"v-maybe";}
+function halo(size,score,label){const c=scoreColor(score);
+  return `<div class="halo ${size}" data-score="${score}" style="--c:${c};--p:0"><div class="core"><b>0</b>${label?`<small>${label}</small>`:""}</div></div>`;}
+function animateHalos(root){(root||document).querySelectorAll(".halo[data-score]").forEach(h=>{
+  const target=+h.dataset.score||0;const num=h.querySelector("b");
+  if(reduce){h.style.setProperty("--p",target);num.textContent=target;return;}
+  const dur=800,t0=performance.now();
+  function step(t){const k=Math.min(1,(t-t0)/dur);const e=1-Math.pow(1-k,3);
+    h.style.setProperty("--p",(target*e).toFixed(1));num.textContent=Math.round(target*e);
+    if(k<1)requestAnimationFrame(step);}
+  requestAnimationFrame(step);});}
+function animateBars(root){requestAnimationFrame(()=>(root||document).querySelectorAll(".bar span[data-w]").forEach(s=>s.style.width=s.dataset.w+"%"));}
+
+/* ---------- documents ---------- */
 let idSeq=1;
-function guessType(name,text){
-  const s=(name+" "+text.slice(0,1200)).toLowerCase();
+function guessType(name,text){const s=(name+" "+text.slice(0,1200)).toLowerCase();
   const jd=/job description|responsibilities|we are looking|requirements|about the role|key duties|qualifications required|job title|reporting to|employment type/;
   const cv=/curriculum vitae|\bresume\b|\bcv\b|work experience|professional experience|education|references available|linkedin\.com\/in/;
-  if(jd.test(s)&&!cv.test(s)) return "jd";
-  if(cv.test(s)) return "cv";
-  return jd.test(s)?"jd":"cv";
-}
+  if(jd.test(s)&&!cv.test(s))return"jd";if(cv.test(s))return"cv";return jd.test(s)?"jd":"cv";}
 async function ingest(files){
   for(const f of files){
-    if(f.type!=="application/pdf"){ toast(`${f.name} isn’t a PDF`,true); continue; }
+    if(f.type!=="application/pdf"&&!/\.pdf$/i.test(f.name)){toast(`${f.name} isn’t a PDF`,true);continue;}
     try{
       const buf=await f.arrayBuffer();
-      const task=pdfjsLib.getDocument({data:buf.slice(0)});
-      const pdf=await task.promise;
+      const pdf=await pdfjsLib.getDocument({data:buf.slice(0)}).promise;
       const pages=[];
-      for(let i=1;i<=pdf.numPages;i++){
-        const pg=await pdf.getPage(i);
-        const tc=await pg.getTextContent();
-        pages.push({n:i,text:tc.items.map(x=>x.str).join(" ").replace(/\s+/g," ").trim()});
-      }
+      for(let i=1;i<=pdf.numPages;i++){const pg=await pdf.getPage(i);const tc=await pg.getTextContent();
+        pages.push({n:i,text:tc.items.map(x=>x.str).join(" ").replace(/\s+/g," ").trim()});}
       const full=pages.map(p=>p.text).join(" ");
-      const doc={id:idSeq++,name:f.name.replace(/\.pdf$/i,""),type:guessType(f.name,full),
-        pages,buf,numPages:pdf.numPages,sel:true};
-      state.docs.push(doc);
-      if(!state.activeId){ state.activeId=doc.id; }
-      renderDocs(); renderScope();
-      if(state.tab==="reader") openReader(state.activeId);
+      const doc={id:idSeq++,name:f.name.replace(/\.pdf$/i,""),type:guessType(f.name,full),pages,buf,numPages:pdf.numPages,sel:true};
+      state.docs.push(doc);if(!state.activeId)state.activeId=doc.id;
+      renderDocs();renderScope();if(state.tab==="overview"||state.tab==="reader")refreshTab();
       toast(`Added ${doc.name}`);
-    }catch(e){ toast(`Couldn’t read ${f.name}`,true); }
+    }catch(e){toast(`Couldn’t read ${f.name}`,true);}
   }
 }
 function renderDocs(){
   $("#docCount").textContent=state.docs.length;
   const list=$("#docList");
-  if(!state.docs.length){ list.innerHTML=`<div style="padding:24px 12px;text-align:center;color:var(--ink-faint);font-size:12.5px">No documents yet.<br>Add a few CVs and a job description to begin.</div>`; return; }
+  if(!state.docs.length){list.innerHTML=`<div style="padding:18px 12px;text-align:center;color:var(--ink-faint);font-size:12px">No documents yet.</div>`;return;}
   list.innerHTML="";
   for(const d of state.docs){
     const el=document.createElement("div");
     el.className="doc"+(d.sel?" sel":"")+(d.id===state.activeId?" active":"");
-    el.innerHTML=`
-      <div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></div>
-      <div class="meta">
-        <div class="nm" title="${d.name}">${d.name}</div>
-        <div class="sub">
-          <button class="tagbtn" data-toggle="${d.id}">${d.type==="cv"?"CV ⇄":"JD ⇄"}</button>
-          <span class="tag ${d.type}">${d.type.toUpperCase()}</span>
-          <span>${d.numPages}p</span>
-        </div>
-      </div>
+    el.innerHTML=`<div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M4 12l5 5L20 6"/></svg></div>
+      <div class="meta"><div class="nm" title="${esc(d.name)}">${esc(d.name)}</div>
+      <div class="sub"><button class="tagbtn" data-toggle="${d.id}">⇄</button><span class="tag ${d.type}">${d.type.toUpperCase()}</span><span>${d.numPages}p</span></div></div>
       <button class="x" data-del="${d.id}" title="Remove">✕</button>`;
     el.addEventListener("click",e=>{
-      if(e.target.closest("[data-del]")||e.target.closest("[data-toggle]")) return;
-      if(e.target.closest(".chk")){ d.sel=!d.sel; renderDocs(); renderScope(); refreshTab(); return; }
-      state.activeId=d.id; if(state.tab==="reader") openReader(d.id); renderDocs();
-    });
+      if(e.target.closest("[data-del]")||e.target.closest("[data-toggle]"))return;
+      if(e.target.closest(".chk")){d.sel=!d.sel;renderDocs();renderScope();refreshTab();return;}
+      state.activeId=d.id;goTab("reader");renderDocs();});
     el.querySelector("[data-del]").addEventListener("click",()=>removeDoc(d.id));
-    el.querySelector("[data-toggle]").addEventListener("click",()=>{ d.type=d.type==="cv"?"jd":"cv"; renderDocs(); refreshTab(); });
+    el.querySelector("[data-toggle]").addEventListener("click",()=>{d.type=d.type==="cv"?"jd":"cv";renderDocs();refreshTab();});
     list.appendChild(el);
   }
 }
-function removeDoc(id){
-  state.docs=state.docs.filter(d=>d.id!==id);
-  if(state.activeId===id) state.activeId=state.docs[0]?.id||null;
-  renderDocs(); renderScope(); refreshTab();
-}
+function removeDoc(id){state.docs=state.docs.filter(d=>d.id!==id);if(state.activeId===id)state.activeId=state.docs[0]?.id||null;renderDocs();renderScope();refreshTab();}
 const selectedDocs=()=>state.docs.filter(d=>d.sel);
 const selCVs=()=>selectedDocs().filter(d=>d.type==="cv");
 const selJDs=()=>selectedDocs().filter(d=>d.type==="jd");
+function docContext(docs,cap=9000){let out="",used=0;
+  for(const d of docs){out+=`\n=== ${d.type.toUpperCase()}: "${d.name}" ===\n`;
+    for(const p of d.pages){const seg=`[${d.name} · p.${p.n}] ${p.text}\n`;if(used+seg.length>cap){out+="…(truncated)\n";return out;}out+=seg;used+=seg.length;}}
+  return out;}
 
-/* ---------------- context builders ---------------- */
-function docContext(docs,cap=9000){
-  let out="",used=0;
-  for(const d of docs){
-    out+=`\n=== ${d.type.toUpperCase()}: "${d.name}" ===\n`;
-    for(const p of d.pages){
-      const seg=`[${d.name} · p.${p.n}] ${p.text}\n`;
-      if(used+seg.length>cap){ out+="…(truncated)\n"; return out; }
-      out+=seg; used+=seg.length;
-    }
-  }
-  return out;
-}
-
-/* ---------------- tabs ---------------- */
-$("#tabs").addEventListener("click",e=>{
-  const b=e.target.closest(".tab"); if(!b) return;
-  state.tab=b.dataset.tab;
-  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t===b));
-  refreshTab();
-});
+/* ---------- nav + focus head ---------- */
+function renderNav(){$("#nav").innerHTML=STAGES.map(s=>`
+  <button class="navitem ${s.id===state.tab?"active":""}" data-go="${s.id}">
+    <span class="num">${s.num}</span>
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${s.icon}</svg></span>
+    <span class="lab">${s.label}</span>
+    ${s.id==="agent"&&state.docs.length&&!state.agentSeen?'<span class="nav-hint">Start here</span>':""}
+  </button>`).join("");
+  $("#nav").querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>goTab(b.dataset.go));}
+function renderFocusHead(actions){
+  const h=HEADERS[state.tab]||["",""];const st=STAGES.find(s=>s.id===state.tab);
+  $("#focusHead").innerHTML=`<div class="focus-head"><div class="h-main">
+    <div class="eyebrow">Stage ${st?st.num:""}</div>
+    <h1>${h[0]}</h1><div class="sub">${h[1]}</div></div>
+    <div class="actions" id="headActions">${actions||""}</div></div>`;}
+function goTab(id){state.tab=id;if(id==="agent")state.agentSeen=true;renderNav();refreshTab();if(typeof isMobile==="function"&&isMobile())closeDrawers();}
 function refreshTab(){
-  const v=$("#view");
-  if(state.tab==="reader") return openReader(state.activeId);
-  if(state.tab==="match") return renderMatch();
-  if(state.tab==="shortlist") return renderShortlist();
-  if(state.tab==="interview") return renderInterview();
-  if(state.tab==="skills") return renderSkills();
+  renderNav();
+  if(state.tab==="overview")return renderOverview();
+  if(state.tab==="agent")return renderAgent();
+  if(state.tab==="reader")return openReader(state.activeId);
+  if(state.tab==="match")return renderMatch();
+  if(state.tab==="shortlist")return renderShortlist();
+  if(state.tab==="interview")return renderInterview();
+  if(state.tab==="skills")return renderSkills();
 }
+
+/* ---------- Overview / command center ---------- */
+function cachedScores(){const jd=selJDs()[0];if(!jd)return[];
+  return selCVs().map(cv=>state.cache["match:"+jd.id+":"+cv.id]).filter(Boolean);}
+function renderOverview(){
+  renderFocusHead(state.docs.length?`<button class="btn" id="ovAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add documents</button>`:"");
+  const v=$("#view");
+  if(!state.docs.length){
+    v.innerHTML=`<div class="empty"><div class="hero-stage">
+      <div class="hero-orb"><span class="orb-ring"></span><span class="orb-ring two"></span><span class="orb-core"></span><span class="orb-kicker">READY</span></div>
+      <div class="hero-kicker">Talent Intelligence Console</div>
+      <h2 class="hero-title">Turn a stack of CVs<br>into a ranked shortlist.</h2>
+      <p class="hero-sub">Add candidate CVs and a job description in the left rail. Everything is grounded in your own documents, with page-level citations.</p>
+      <div class="hero-feat">
+        <div><b>Fit Score</b><small>Weighted scoring of any CV against a role.</small></div>
+        <div><b>Shortlist</b><small>Every candidate ranked against one job.</small></div>
+        <div><b>Interview Kit</b><small>Questions aimed at each person's gaps.</small></div>
+        <div><b>Skills Graph</b><small>The skill landscape of your pool.</small></div>
+      </div>
+      <div style="margin-top:24px"><button class="btn primary" id="heroAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add documents</button></div>
+      <p class="faint" style="font-size:11.5px;margin-top:14px">First time? Paste a free Gemini key (top right) — it stays in your browser.</p>
+    </div></div>`;
+    $("#heroAdd").onclick=()=>$("#fileInput").click();bindOvAdd();
+    return;
+  }
+  const jd=selJDs()[0],cvs=selCVs(),scored=cachedScores();
+  const avg=scored.length?Math.round(scored.reduce((a,b)=>a+b.overall,0)/scored.length):null;
+  const top=scored.length?[...scored].sort((a,b)=>b.overall-a.overall)[0]:null;
+  v.innerHTML=`<div class="view-pad"><div class="bento">
+    <div class="tile hero">
+      <div><div class="eyebrow">Pool fit ${jd?"· "+esc(jd.name):""}</div></div>
+      <div style="display:flex;align-items:center;gap:22px;margin:6px 0">
+        ${halo("lg",avg==null?0:avg,"avg fit")}
+        <div>
+          <div class="bignum" data-count="${cvs.length}">0</div>
+          <div class="label">candidates in pool</div>
+          ${avg==null?`<div class="faint" style="font-size:12px;margin-top:10px">Run Fit Score to populate</div>`:`<div class="muted" style="font-size:12.5px;margin-top:10px">${scored.length} scored against the role</div>`}
+        </div>
+      </div>
+      <button class="btn primary" id="ovRun" style="align-self:flex-start">${avg==null?"Run fit scoring":"Open Fit Score"}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    </div>
+    <div class="tile span3">
+      <div class="te eyebrow">Active role</div>
+      ${jd?`<div class="disp" style="font-size:19px;color:var(--ink)">${esc(jd.name)}</div><div class="muted" style="font-size:12.5px;margin-top:4px">${jd.numPages} page${jd.numPages>1?"s":""} · selected as the target role</div>`:`<div class="muted">No job description selected. Tag one in the rail (⇄) and select it.</div>`}
+    </div>
+    <div class="tile span3">
+      <div class="te eyebrow">Top candidate</div>
+      ${top?`<div style="display:flex;align-items:center;gap:14px">${halo("md",top.overall,"fit")}<div><div class="disp" style="font-size:18px;color:var(--ink)">${esc(top._name)}</div><span class="verdict ${vClass(top.verdict)}">${esc(top.verdict)}</span></div></div>`:`<div class="muted">No scores yet — run Fit Score to surface your strongest match.</div>`}
+    </div>
+    <div class="tile span2"><div class="te eyebrow">Pool</div><div class="stat-row"><span class="bignum" data-count="${cvs.length}" style="font-size:34px">0</span><span class="label">CVs</span></div></div>
+    <div class="tile span2"><div class="te eyebrow">Roles</div><div class="stat-row"><span class="bignum" data-count="${selJDs().length}" style="font-size:34px">0</span><span class="label">JDs</span></div></div>
+    <div class="tile span2">
+      <div class="te eyebrow">Next steps</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn ghost" style="justify-content:flex-start" data-go2="shortlist">Build shortlist →</button>
+        <button class="btn ghost" style="justify-content:flex-start" data-go2="interview">Interview kit →</button>
+        <button class="btn ghost" style="justify-content:flex-start" data-go2="skills">Skills graph →</button>
+      </div>
+    </div>
+  </div></div>`;
+  $("#ovRun").onclick=()=>goTab("match");
+  v.querySelectorAll("[data-go2]").forEach(b=>b.onclick=()=>goTab(b.dataset.go2));
+  bindOvAdd();animateHalos(v);animateCounts(v);
+}
+function bindOvAdd(){const b=$("#ovAdd");if(b)b.onclick=()=>$("#fileInput").click();}
+function animateCounts(root){(root||document).querySelectorAll("[data-count]").forEach(el=>{
+  const target=+el.dataset.count||0;if(reduce){el.textContent=target;return;}
+  const dur=700,t0=performance.now();
+  function step(t){const k=Math.min(1,(t-t0)/dur);el.textContent=Math.round(target*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(step);}
+  requestAnimationFrame(step);});}
 
 /* ---------- Reader ---------- */
 async function openReader(id){
-  const v=$("#view"); const d=state.docs.find(x=>x.id===id);
-  if(!d){
-    v.innerHTML=heroEmpty(); bindHero(); return;
-  }
-  v.innerHTML=`
-    <div class="reader-bar">
-      <span class="tag ${d.type}">${d.type.toUpperCase()}</span>
-      <span class="nm">${d.name}</span>
-      <div class="pagectl">
-        <button id="prevPg" aria-label="Previous page">‹</button>
-        <span class="ind" id="pgInd">— / ${d.numPages}</span>
-        <button id="nextPg" aria-label="Next page">›</button>
-      </div>
-    </div>
+  renderFocusHead(`<button class="btn" id="rdAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add</button>`);
+  const rd=$("#rdAdd");if(rd)rd.onclick=()=>$("#fileInput").click();
+  const v=$("#view");const d=state.docs.find(x=>x.id===id);
+  if(!d){v.innerHTML=`<div class="empty"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8"/></svg></div><h3>No document open</h3><p>Add a PDF, or pick one from the rail to read it here.</p></div>`;return;}
+  v.innerHTML=`<div class="reader-bar"><span class="tag ${d.type}">${d.type.toUpperCase()}</span><span class="nm">${esc(d.name)}</span>
+    <div class="pagectl"><button id="prevPg">‹</button><span class="ind" id="pgInd">— / ${d.numPages}</span><button id="nextPg">›</button></div></div>
     <div class="canvas-wrap"><canvas id="pdfCanvas"></canvas></div>`;
-  try{
-    state.pdf=await pdfjsLib.getDocument({data:d.buf.slice(0)}).promise;
-    state.pageNum=Math.min(state.pageNum,state.pdf.numPages)||1;
+  try{state.pdf=await pdfjsLib.getDocument({data:d.buf.slice(0)}).promise;state.pageNum=Math.min(state.pageNum,state.pdf.numPages)||1;
     await drawPage();
-    $("#prevPg").onclick=()=>{ if(state.pageNum>1){state.pageNum--;drawPage();} };
-    $("#nextPg").onclick=()=>{ if(state.pageNum<state.pdf.numPages){state.pageNum++;drawPage();} };
-  }catch(e){ v.querySelector(".canvas-wrap").innerHTML=`<p class="faint">Couldn’t render this PDF.</p>`; }
+    $("#prevPg").onclick=()=>{if(state.pageNum>1){state.pageNum--;drawPage();}};
+    $("#nextPg").onclick=()=>{if(state.pageNum<state.pdf.numPages){state.pageNum++;drawPage();}};
+  }catch(e){v.querySelector(".canvas-wrap").innerHTML=`<p class="faint">Couldn’t render this PDF.</p>`;}
 }
-async function drawPage(){
-  const pg=await state.pdf.getPage(state.pageNum);
-  const cv=$("#pdfCanvas"); if(!cv) return;
-  const wrapW=Math.min(820,cv.parentElement.clientWidth-44);
-  const base=pg.getViewport({scale:1});
-  const scale=(wrapW/base.width)*Math.min(window.devicePixelRatio||1,2);
-  const vp=pg.getViewport({scale});
-  cv.width=vp.width; cv.height=vp.height;
-  cv.style.width=(vp.width/Math.min(window.devicePixelRatio||1,2))+"px";
+async function drawPage(){const pg=await state.pdf.getPage(state.pageNum);const cv=$("#pdfCanvas");if(!cv)return;
+  const wrapW=Math.min(820,cv.parentElement.clientWidth-52);const base=pg.getViewport({scale:1});
+  const dpr=Math.min(window.devicePixelRatio||1,2);const scale=(wrapW/base.width)*dpr;const vp=pg.getViewport({scale});
+  cv.width=vp.width;cv.height=vp.height;cv.style.width=(vp.width/dpr)+"px";
   await pg.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise;
-  const ind=$("#pgInd"); if(ind) ind.textContent=`${state.pageNum} / ${state.pdf.numPages}`;
-}
-function jumpTo(name,page){
-  const d=state.docs.find(x=>x.name===name)||state.docs.find(x=>x.name.includes(name));
-  if(!d) return;
-  state.activeId=d.id; state.pageNum=page||1; state.tab="reader";
-  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab==="reader"));
-  renderDocs(); openReader(d.id);
-}
+  const ind=$("#pgInd");if(ind)ind.textContent=`${state.pageNum} / ${state.pdf.numPages}`;}
+function jumpTo(name,page){const d=state.docs.find(x=>x.name===name)||state.docs.find(x=>x.name.includes(name));if(!d)return;
+  state.activeId=d.id;state.pageNum=page||1;goTab("reader");renderDocs();}
 
-/* ---------- shared loaders ---------- */
-function loader(msg){ return `<div class="loader"><div class="spin"></div><div>${msg}</div></div>`; }
-function heroEmpty(){
-  return `<div class="empty"><div class="hero">
-    <div class="kicker">Talent intelligence workspace</div>
-    <h2>Turn a stack of CVs into a ranked shortlist — in minutes.</h2>
-    <p class="muted">Add candidate CVs and a job description on the left. Everything below is grounded in your own documents, with page-level citations.</p>
-    <div class="feat">
-      <div><b>Fit Score</b><small>Score any CV against a role across weighted dimensions.</small></div>
-      <div><b>Shortlist</b><small>Rank every candidate against one job at a glance.</small></div>
-      <div><b>Interview Kit</b><small>Tailored questions that probe each candidate’s gaps.</small></div>
-      <div><b>Skills Graph</b><small>See the skills landscape across your talent pool.</small></div>
-    </div>
-    <div style="margin-top:18px"><button class="btn primary" id="heroAdd">Add documents</button></div>
-    <p class="faint" style="font-size:11.5px;margin-top:12px">First time here? Paste a free Gemini API key (top right) — it stays in your browser and powers the analysis.</p>
-  </div></div>`;
-}
-function bindHero(){ const b=$("#heroAdd"); if(b) b.onclick=()=>$("#fileInput").click(); }
-function needDocs(what){
-  return `<div class="empty"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg></div>
-    <h3>${what.title}</h3><p>${what.body}</p>
-    <div style="margin-top:10px"><button class="btn" id="heroAdd2">Add documents</button></div></div>`;
-}
-function bindHero2(){ const b=$("#heroAdd2"); if(b) b.onclick=()=>$("#fileInput").click(); }
+/* ---------- loaders ---------- */
+function skelCards(n){let s="";for(let i=0;i<n;i++)s+=`<div class="skel-card"><div class="skel-row"><div class="skel" style="width:92px;height:92px;border-radius:50%"></div><div style="flex:1"><div class="skel" style="height:18px;width:40%;margin-bottom:10px"></div><div class="skel" style="height:12px;width:75%"></div></div></div><div class="skel" style="height:7px;margin-top:18px"></div><div class="skel" style="height:7px;width:80%;margin-top:10px"></div></div>`;return s;}
+function loader(msg){return `<div class="loader"><div class="spin"></div><div>${msg}</div></div>`;}
+function needDocs(t,b){return `<div class="empty"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg></div><h3>${t}</h3><p>${b}</p><div style="margin-top:10px"><button class="btn" id="ndAdd">Add documents</button></div></div>`;}
+function bindNd(){const b=$("#ndAdd");if(b)b.onclick=()=>$("#fileInput").click();}
 
 /* ---------- Fit Score ---------- */
 async function renderMatch(){
-  const v=$("#view");
-  const jds=selJDs(), cvs=selCVs();
-  if(!state.docs.length){ v.innerHTML=heroEmpty(); bindHero(); return; }
-  if(!jds.length||!cvs.length){
-    v.innerHTML=`<div class="view-pad">${matchControls()}<div class="card" style="margin-top:6px"><p class="muted" style="margin:0">Select at least <b>one job description</b> and <b>one CV</b> in the sidebar, then choose a role above.</p></div></div>`;
-    bindMatchControls(); return;
-  }
-  v.innerHTML=`<div class="view-pad">${matchControls()}<div id="matchOut">${loader("Scoring candidates against the role…")}</div></div>`;
-  bindMatchControls();
-  const jd=jds[0];
-  const out=$("#matchOut");
-  try{
-    const results=[];
-    for(const cv of cvs){
-      const sig="match:"+jd.id+":"+cv.id;
-      let r=state.cache[sig];
-      if(!r){
-        const prompt=`You are an expert technical recruiter. Score how well the CANDIDATE fits the ROLE.
-Return JSON only:
-{"overall":0-100,"verdict":"strong fit"|"possible fit"|"weak fit","summary":"2 sentences",
-"dimensions":[{"name":"Skills match","score":0-100,"note":"short"},{"name":"Experience level","score":0-100,"note":"short"},{"name":"Domain / industry","score":0-100,"note":"short"},{"name":"Role responsibilities","score":0-100,"note":"short"}],
-"strengths":["..."],"gaps":["..."]}
-Be evidence-based and honest; do not inflate scores. Base everything ONLY on the text.
-
-ROLE — ${jd.name}:
-${jd.pages.map(p=>p.text).join(" ").slice(0,5000)}
-
-CANDIDATE — ${cv.name}:
-${cv.pages.map(p=>p.text).join(" ").slice(0,5000)}`;
-        r=parseJSON(await gemini(prompt,{json:true,temp:0.2}));
-        r._name=cv.name; state.cache[sig]=r;
-      }
-      results.push(r);
-    }
+  if(!state.apiKey){renderFocusHead("");$("#view").innerHTML='<div class="view-pad">'+noKeyCard()+'</div>';return;}
+  renderFocusHead();const v=$("#view");const jds=selJDs(),cvs=selCVs();
+  if(!state.docs.length){v.innerHTML=needDocs("No documents yet","Add candidate CVs and a job description to score fit.");bindNd();return;}
+  if(!jds.length||!cvs.length){v.innerHTML=`<div class="view-pad">${matchControls()}<div class="card"><p class="muted" style="margin:0">Select at least <b>one job description</b> and <b>one CV</b> in the rail, then pick a role above.</p></div></div>`;bindMatchControls();return;}
+  v.innerHTML=`<div class="view-pad">${matchControls()}<div id="matchOut">${skelCards(Math.min(cvs.length,3))}</div></div>`;bindMatchControls();
+  const jd=jds[0],out=$("#matchOut");
+  try{const results=[];
+    for(const cv of cvs){const sig="match:"+jd.id+":"+cv.id;let r=state.cache[sig];
+      if(!r){const prompt=`You are an expert technical recruiter. Score how well the CANDIDATE fits the ROLE. Return JSON only:
+{"overall":0-100,"verdict":"strong fit"|"possible fit"|"weak fit","summary":"2 sentences","dimensions":[{"name":"Skills match","score":0-100,"note":"short"},{"name":"Experience level","score":0-100,"note":"short"},{"name":"Domain / industry","score":0-100,"note":"short"},{"name":"Role responsibilities","score":0-100,"note":"short"}],"strengths":["..."],"gaps":["..."]}
+Be evidence-based and honest; do not inflate. Base everything ONLY on the text.
+ROLE — ${jd.name}: ${jd.pages.map(p=>p.text).join(" ").slice(0,5000)}
+CANDIDATE — ${cv.name}: ${cv.pages.map(p=>p.text).join(" ").slice(0,5000)}`;
+        r=parseJSON(await gemini(prompt,{json:true,temp:0.2}));r._name=cv.name;state.cache[sig]=r;}
+      results.push(r);}
     results.sort((a,b)=>b.overall-a.overall);
-    out.innerHTML=`<p class="faint" style="margin:0 0 14px">Scored against <b style="color:var(--ink-dim)">${jd.name}</b> · ${results.length} candidate${results.length>1?"s":""}</p>`+results.map(matchCard).join("");
-    requestAnimationFrame(()=>document.querySelectorAll(".bar span").forEach(s=>s.style.width=s.dataset.w+"%"));
-  }catch(e){ out.innerHTML=`<div class="card"><p class="muted" style="margin:0">${e.message}</p></div>`; }
+    out.innerHTML=`<p class="eyebrow" style="margin:0 0 16px">Scored against ${esc(jd.name)} · ${results.length} candidate${results.length>1?"s":""}</p>`+results.map(matchCard).join("");
+    animateHalos(out);animateBars(out);
+  }catch(e){out.innerHTML=`<div class="card"><p class="muted" style="margin:0">${e.message}</p></div>`;}
 }
-function matchControls(){
-  const jds=selJDs();
-  return `<div class="controls">
-    <div class="select"><select id="jdPick">${jds.map(j=>`<option value="${j.id}">${j.name}</option>`).join("")||`<option>No job selected</option>`}</select></div>
-    <span class="faint" style="font-size:12px">Scoring ${selCVs().length} selected CV(s)</span>
-    <button class="btn ghost" id="reMatch" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg>Re-run</button>
-  </div>`;
-}
+function matchControls(){const jds=selJDs();
+  return `<div class="controls"><div class="select"><select id="jdPick">${jds.map(j=>`<option value="${j.id}">${j.name}</option>`).join("")||`<option>No role selected</option>`}</select></div>
+  <span class="faint mono" style="font-size:11.5px">${selCVs().length} CV(s) selected</span>
+  <button class="btn ghost" id="reMatch" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg>Re-run</button></div>`;}
 function bindMatchControls(){
-  const re=$("#reMatch"); if(re) re.onclick=()=>{ const jd=selJDs()[0]; selCVs().forEach(cv=>delete state.cache["match:"+(jd&&jd.id)+":"+cv.id]); renderMatch(); };
-  const pick=$("#jdPick"); if(pick) pick.onchange=()=>{
-    const id=+pick.value;
-    state.docs.forEach(d=>{ if(d.type==="jd") d.sel=(d.id===id); });
-    renderDocs(); renderScope(); renderMatch();
-  };
-}
-function vClass(v){ return /strong/i.test(v)?"v-strong":/weak/i.test(v)?"v-weak":"v-maybe"; }
-function matchCard(r){
-  return `<div class="card">
-    <div class="scorewrap">
-      <div class="ring" style="--p:${r.overall}"><div class="inner"><b>${r.overall}</b><small>fit</small></div></div>
-      <div style="flex:1;min-width:0">
-        <div class="between"><h3 style="cursor:pointer" onclick="jumpTo('${(r._name||'').replace(/'/g,'')}',1)">${r._name||"Candidate"}</h3><span class="verdict ${vClass(r.verdict)}">${r.verdict||""}</span></div>
-        <p class="muted" style="margin:4px 0 0">${r.summary||""}</p>
-      </div>
-    </div>
-    <div style="margin-top:16px">${(r.dimensions||[]).map(d=>`
-      <div class="dim"><div class="lab"><span>${d.name} <span class="faint">— ${d.note||""}</span></span><span class="v">${d.score}</span></div>
-      <div class="bar"><span data-w="${d.score}" style="width:0"></span></div></div>`).join("")}</div>
-    <div class="row" style="align-items:flex-start;margin-top:14px;gap:24px">
-      <div style="flex:1"><div class="faint" style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px">Strengths</div><div class="chips">${(r.strengths||[]).map(s=>`<span class="chip good">${s}</span>`).join("")||'<span class="faint">—</span>'}</div></div>
-      <div style="flex:1"><div class="faint" style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px">Gaps</div><div class="chips">${(r.gaps||[]).map(s=>`<span class="chip gap">${s}</span>`).join("")||'<span class="faint">—</span>'}</div></div>
-    </div></div>`;
-}
+  const re=$("#reMatch");if(re)re.onclick=()=>{const jd=selJDs()[0];selCVs().forEach(cv=>delete state.cache["match:"+(jd&&jd.id)+":"+cv.id]);renderMatch();};
+  const pick=$("#jdPick");if(pick)pick.onchange=()=>{const id=+pick.value;state.docs.forEach(d=>{if(d.type==="jd")d.sel=(d.id===id);});renderDocs();renderScope();renderMatch();};}
+function matchCard(r){return `<div class="card"><div class="scorewrap">
+    ${halo("md",r.overall,"fit")}
+    <div style="flex:1;min-width:0"><div class="between"><h3 style="cursor:pointer" data-jump="${esc(r._name||'')}">${esc(r._name||"Candidate")}</h3><span class="verdict ${vClass(r.verdict)}">${esc(r.verdict||"")}</span></div>
+    <p class="muted" style="margin:5px 0 0">${esc(r.summary||"")}</p></div></div>
+  <div style="margin-top:16px">${(r.dimensions||[]).map(d=>`<div class="dim"><div class="lab"><span>${esc(d.name)} <span class="faint">— ${esc(d.note||"")}</span></span><span class="v">${esc(d.score)}</span></div><div class="bar"><span data-w="${+d.score||0}" style="width:0"></span></div></div>`).join("")}</div>
+  <div style="display:flex;align-items:flex-start;gap:24px;margin-top:16px">
+    <div style="flex:1"><div class="eyebrow" style="margin-bottom:4px">Strengths</div><div class="chips">${(r.strengths||[]).map(s=>`<span class="chip good">${esc(s)}</span>`).join("")||'<span class="faint">—</span>'}</div></div>
+    <div style="flex:1"><div class="eyebrow" style="margin-bottom:4px">Gaps</div><div class="chips">${(r.gaps||[]).map(s=>`<span class="chip gap">${esc(s)}</span>`).join("")||'<span class="faint">—</span>'}</div></div>
+  </div></div>`;}
 
 /* ---------- Shortlist ---------- */
 async function renderShortlist(){
-  const v=$("#view"); const jds=selJDs(), cvs=selCVs();
-  if(!state.docs.length){ v.innerHTML=heroEmpty(); bindHero(); return; }
-  if(!jds.length||cvs.length<1){
-    v.innerHTML=needDocs({title:"Need a role and candidates",body:"Select one job description and one or more CVs to build a ranked shortlist."}); bindHero2(); return;
-  }
+  if(!state.apiKey){renderFocusHead("");$("#view").innerHTML='<div class="view-pad">'+noKeyCard()+'</div>';return;}
+  const v=$("#view");const jds=selJDs(),cvs=selCVs();
+  renderFocusHead(jds.length&&cvs.length?`<button class="btn gold" id="exportSL"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>Export</button>`:"");
+  if(!state.docs.length){v.innerHTML=needDocs("No documents yet","Add CVs and a role to build a ranked shortlist.");bindNd();return;}
+  if(!jds.length||!cvs.length){v.innerHTML=needDocs("Need a role and candidates","Select one job description and one or more CVs.");bindNd();return;}
   const jd=jds[0];
-  v.innerHTML=`<div class="view-pad"><div class="between" style="margin-bottom:14px"><div><h3 style="margin:0">Shortlist</h3><span class="faint" style="font-size:12.5px">Ranked against ${jd.name}</span></div>
-    <button class="btn" id="exportSL"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>Export</button></div>
-    <div id="slOut">${loader("Ranking candidates…")}</div></div>`;
+  v.innerHTML=`<div class="view-pad"><p class="eyebrow" style="margin:0 0 16px">Ranked against ${esc(jd.name)}</p><div id="slOut">${loader("Ranking candidates…")}</div></div>`;
   const out=$("#slOut");
-  try{
-    const rows=[];
-    for(const cv of cvs){
-      const sig="match:"+jd.id+":"+cv.id;
-      let r=state.cache[sig];
-      if(!r){
-        const prompt=`Score candidate fit for the role. JSON only:
-{"overall":0-100,"verdict":"strong fit"|"possible fit"|"weak fit","topStrength":"3-5 words","topGap":"3-5 words","yearsRelevant":number}
+  try{const rows=[];
+    for(const cv of cvs){const sig="match:"+jd.id+":"+cv.id;let r=state.cache[sig];
+      if(!r){const prompt=`Score candidate fit for the role. JSON only:
+{"overall":0-100,"verdict":"strong fit"|"possible fit"|"weak fit","topStrength":"3-5 words","topGap":"3-5 words"}
 Honest, evidence-based, from text only.
 ROLE ${jd.name}: ${jd.pages.map(p=>p.text).join(" ").slice(0,4000)}
 CANDIDATE ${cv.name}: ${cv.pages.map(p=>p.text).join(" ").slice(0,4000)}`;
-        r=parseJSON(await gemini(prompt,{json:true,temp:0.2})); r._name=cv.name; state.cache[sig]=r;
-      }
-      rows.push(r);
-    }
+        r=parseJSON(await gemini(prompt,{json:true,temp:0.2}));r._name=cv.name;state.cache[sig]=r;}
+      rows.push(r);}
     rows.sort((a,b)=>b.overall-a.overall);
-    out.innerHTML=`<table><thead><tr><th>#</th><th>Candidate</th><th>Fit</th><th>Verdict</th><th>Top strength</th><th>Key gap</th></tr></thead><tbody>
-      ${rows.map((r,i)=>`<tr>
-        <td class="rank">${i+1}</td>
-        <td style="font-weight:500;cursor:pointer" onclick="jumpTo('${(r._name||'').replace(/'/g,'')}',1)">${r._name}</td>
-        <td><span class="minibar"><span style="width:${r.overall}%"></span></span><span class="mono" style="font-size:12px">${r.overall}</span></td>
-        <td><span class="verdict ${vClass(r.verdict)}">${r.verdict}</span></td>
-        <td class="muted">${r.topStrength||"—"}</td>
-        <td class="muted">${r.topGap||"—"}</td></tr>`).join("")}
-    </tbody></table>`;
-    $("#exportSL").onclick=()=>exportShortlist(jd.name,rows);
-  }catch(e){ out.innerHTML=`<div class="card"><p class="muted" style="margin:0">${e.message}</p></div>`; }
+    out.innerHTML=`<div class="card" style="padding:14px 8px"><table><thead><tr><th>#</th><th>Candidate</th><th>Fit</th><th>Verdict</th><th>Top strength</th><th>Key gap</th></tr></thead><tbody>
+      ${rows.map((r,i)=>`<tr><td class="rank ${i===0?"r1":""}">${i+1}</td>
+        <td style="font-weight:500;cursor:pointer" data-jump="${esc(r._name||'')}">${esc(r._name)}</td>
+        <td><span class="minibar"><span style="width:${+r.overall||0}%"></span></span><span class="mono" style="font-size:12px;color:${r.overall>=85?'var(--gold)':'var(--ink-dim)'}">${esc(r.overall)}</span></td>
+        <td><span class="verdict ${vClass(r.verdict)}">${esc(r.verdict)}</span></td><td class="muted">${esc(r.topStrength||"—")}</td><td class="muted">${esc(r.topGap||"—")}</td></tr>`).join("")}
+    </tbody></table></div>`;
+    const ex=$("#exportSL");if(ex)ex.onclick=()=>exportShortlist(jd.name,rows);
+  }catch(e){out.innerHTML=`<div class="card"><p class="muted" style="margin:0">${e.message}</p></div>`;}
 }
-function exportShortlist(role,rows){
-  const w=window.open("","_blank");
-  const css=`body{font-family:Inter,Arial,sans-serif;max-width:760px;margin:40px auto;color:#1b1d22;padding:0 20px}
-  h1{font-size:22px}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #e2ddd2;font-size:14px}
-  th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#8a9099}.b{height:6px;background:#e2ddd2;border-radius:4px;width:90px;display:inline-block;vertical-align:middle;margin-right:8px;overflow:hidden}.b span{display:block;height:100%;background:#0e9e7a}small{color:#8a9099}`;
-  w.document.write(`<title>Shortlist — ${role}</title><style>${css}</style>
-    <h1>Candidate shortlist</h1><small>Role: ${role} · Generated by TalentLens · ${new Date().toLocaleDateString()}</small>
+function exportShortlist(role,rows){const w=window.open("","_blank");
+  const css=`body{font-family:Inter,Arial,sans-serif;max-width:760px;margin:40px auto;color:#1b1d22;padding:0 20px}h1{font-size:22px}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #e2ddd2;font-size:14px}th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#8a9099}.b{height:6px;background:#e2ddd2;border-radius:4px;width:90px;display:inline-block;vertical-align:middle;margin-right:8px;overflow:hidden}.b span{display:block;height:100%;background:#0e9e7a}small{color:#8a9099}`;
+  w.document.write(`<title>Shortlist — ${esc(role)}</title><style>${css}</style><h1>Candidate shortlist</h1><small>Role: ${esc(role)} · TalentLens · ${new Date().toLocaleDateString()}</small>
     <table><thead><tr><th>#</th><th>Candidate</th><th>Fit</th><th>Verdict</th><th>Top strength</th><th>Key gap</th></tr></thead><tbody>
-    ${rows.map((r,i)=>`<tr><td>${i+1}</td><td><b>${r._name}</b></td><td><span class="b"><span style="width:${r.overall}%"></span></span>${r.overall}</td><td>${r.verdict}</td><td>${r.topStrength||"—"}</td><td>${r.topGap||"—"}</td></tr>`).join("")}
-    </tbody></table><p style="margin-top:24px"><button onclick="print()">Print / Save as PDF</button></p>`);
-  w.document.close();
-}
+    ${rows.map((r,i)=>`<tr><td>${i+1}</td><td><b>${esc(r._name)}</b></td><td><span class="b"><span style="width:${+r.overall||0}%"></span></span>${esc(r.overall)}</td><td>${esc(r.verdict)}</td><td>${esc(r.topStrength||"—")}</td><td>${esc(r.topGap||"—")}</td></tr>`).join("")}
+    </tbody></table><p style="margin-top:24px"><button onclick="print()">Print / Save as PDF</button></p>`);w.document.close();}
 
 /* ---------- Interview Kit ---------- */
 async function renderInterview(){
-  const v=$("#view"); const cvs=selCVs(), jds=selJDs();
-  if(!state.docs.length){ v.innerHTML=heroEmpty(); bindHero(); return; }
-  if(!cvs.length){ v.innerHTML=needDocs({title:"Select a candidate",body:"Choose at least one CV (and ideally a job description) to generate a tailored interview kit."}); bindHero2(); return; }
-  v.innerHTML=`<div class="view-pad">
-    <div class="controls"><div class="select"><select id="ivPick">${cvs.map(c=>`<option value="${c.id}">${c.name}</option>`).join("")}</select></div>
-    <span class="faint" style="font-size:12px">${jds.length?"Targeted to "+jds[0].name:"No role selected — general kit"}</span></div>
+  if(!state.apiKey){renderFocusHead("");$("#view").innerHTML='<div class="view-pad">'+noKeyCard()+'</div>';return;}
+  renderFocusHead();const v=$("#view");const cvs=selCVs(),jds=selJDs();
+  if(!state.docs.length){v.innerHTML=needDocs("No documents yet","Add a CV (and ideally a role) to generate an interview kit.");bindNd();return;}
+  if(!cvs.length){v.innerHTML=needDocs("Select a candidate","Choose at least one CV to generate a tailored interview kit.");bindNd();return;}
+  v.innerHTML=`<div class="view-pad"><div class="controls"><div class="select"><select id="ivPick">${cvs.map(c=>`<option value="${c.id}">${c.name}</option>`).join("")}</select></div>
+    <span class="faint mono" style="font-size:11.5px">${jds.length?"Targeted to "+jds[0].name:"No role selected — general kit"}</span></div>
     <div id="ivOut">${loader("Building the interview kit…")}</div></div>`;
-  const pick=$("#ivPick"); pick.onchange=()=>buildKit(+pick.value);
-  buildKit(+pick.value);
+  const pick=$("#ivPick");pick.onchange=()=>buildKit(+pick.value);buildKit(+pick.value);
 }
-async function buildKit(cvId){
-  const out=$("#ivOut"); out.innerHTML=loader("Building the interview kit…");
-  const cv=state.docs.find(d=>d.id===cvId); const jd=selJDs()[0];
-  const sig="kit:"+cvId+":"+(jd?jd.id:"none");
-  try{
-    let k=state.cache[sig];
-    if(!k){
-      const prompt=`You are a hiring manager preparing to interview a candidate${jd?" for a specific role":""}.
-Produce a focused interview kit. JSON only:
-{"questions":[{"area":"e.g. Technical / Leadership / Domain / Behavioural","question":"...","whatGoodLooksLike":"what a strong answer demonstrates"}],
-"probes":["follow-up probes for weak areas"],
-"redFlags":["things in the CV worth verifying or challenging"]}
-Give 6-8 questions. Target the candidate's likely GAPS versus the role, not generic questions. Evidence-based, from the text.
+async function buildKit(cvId){const out=$("#ivOut");out.innerHTML=loader("Building the interview kit…");
+  const cv=state.docs.find(d=>d.id===cvId),jd=selJDs()[0],sig="kit:"+cvId+":"+(jd?jd.id:"none");
+  try{let k=state.cache[sig];
+    if(!k){const prompt=`You are a hiring manager preparing to interview a candidate${jd?" for a specific role":""}. Produce a focused interview kit. JSON only:
+{"questions":[{"area":"Technical / Leadership / Domain / Behavioural","question":"...","whatGoodLooksLike":"what a strong answer shows"}],"probes":["follow-ups for weak areas"],"redFlags":["things in the CV worth verifying"]}
+Give 6-8 questions targeting the candidate's likely GAPS versus the role, not generic ones. Evidence-based, from the text.
 ${jd?`ROLE ${jd.name}: ${jd.pages.map(p=>p.text).join(" ").slice(0,3500)}`:""}
 CANDIDATE ${cv.name}: ${cv.pages.map(p=>p.text).join(" ").slice(0,4500)}`;
-      k=parseJSON(await gemini(prompt,{json:true,temp:0.4})); state.cache[sig]=k;
-    }
-    out.innerHTML=`
-      <div class="card"><div class="between"><h3>Interview kit — ${cv.name}</h3>
+      k=parseJSON(await gemini(prompt,{json:true,temp:0.4}));state.cache[sig]=k;}
+    out.innerHTML=`<div class="card"><div class="between"><h3>Interview kit — ${esc(cv.name)}</h3>
         <button class="btn ghost" id="ivExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>Export</button></div>
-        ${(k.questions||[]).map(q=>`<div class="qblock"><div class="area">${q.area||"Question"}</div><div class="q">${q.question}</div>${q.whatGoodLooksLike?`<div class="gll">Strong answer: ${q.whatGoodLooksLike}</div>`:""}</div>`).join("")}
-      </div>
-      <div class="row" style="align-items:flex-start;gap:16px">
-        <div class="card" style="flex:1"><h3 style="font-size:13px">Follow-up probes</h3><div class="chips" style="margin-top:6px">${(k.probes||[]).map(p=>`<span class="chip">${p}</span>`).join("")||'<span class="faint">—</span>'}</div></div>
-        <div class="card" style="flex:1"><h3 style="font-size:13px">Watch-outs to verify</h3><div class="chips" style="margin-top:6px">${(k.redFlags||[]).map(p=>`<span class="chip gap">${p}</span>`).join("")||'<span class="faint">—</span>'}</div></div>
+        ${(k.questions||[]).map(q=>`<div class="qblock"><div class="area">${esc(q.area||"Question")}</div><div class="q">${esc(q.question)}</div>${q.whatGoodLooksLike?`<div class="gll">Strong answer: ${esc(q.whatGoodLooksLike)}</div>`:""}</div>`).join("")}</div>
+      <div style="display:flex;align-items:flex-start;gap:16px">
+        <div class="card" style="flex:1"><h3 style="font-size:13px">Follow-up probes</h3><div class="chips" style="margin-top:8px">${(k.probes||[]).map(p=>`<span class="chip">${esc(p)}</span>`).join("")||'<span class="faint">—</span>'}</div></div>
+        <div class="card" style="flex:1"><h3 style="font-size:13px">Watch-outs to verify</h3><div class="chips" style="margin-top:8px">${(k.redFlags||[]).map(p=>`<span class="chip gap">${esc(p)}</span>`).join("")||'<span class="faint">—</span>'}</div></div>
       </div>`;
     $("#ivExport").onclick=()=>exportKit(cv.name,jd?jd.name:"",k);
-  }catch(e){ out.innerHTML=`<div class="card"><p class="muted" style="margin:0">${e.message}</p></div>`; }
+  }catch(e){out.innerHTML=`<div class="card"><p class="muted" style="margin:0">${e.message}</p></div>`;}
 }
-function exportKit(name,role,k){
-  const w=window.open("","_blank");
+function exportKit(name,role,k){const w=window.open("","_blank");
   const css=`body{font-family:Inter,Arial,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#1b1d22}h1{font-size:21px;margin-bottom:2px}.area{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#0e9e7a;font-weight:700;margin-top:18px}.q{font-weight:600;margin:3px 0}.g{color:#5a6170;font-size:13px;border-left:2px solid #e2ddd2;padding-left:10px}h2{font-size:14px;margin-top:24px}li{margin:4px 0}small{color:#8a9099}`;
-  w.document.write(`<title>Interview kit — ${name}</title><style>${css}</style><h1>Interview kit — ${name}</h1><small>${role?"Role: "+role+" · ":""}Generated by TalentLens · ${new Date().toLocaleDateString()}</small>
-    ${(k.questions||[]).map(q=>`<div class="area">${q.area||""}</div><div class="q">${q.question}</div>${q.whatGoodLooksLike?`<div class="g">Strong answer: ${q.whatGoodLooksLike}</div>`:""}`).join("")}
-    <h2>Follow-up probes</h2><ul>${(k.probes||[]).map(p=>`<li>${p}</li>`).join("")}</ul>
-    <h2>Watch-outs to verify</h2><ul>${(k.redFlags||[]).map(p=>`<li>${p}</li>`).join("")}</ul>
-    <p style="margin-top:24px"><button onclick="print()">Print / Save as PDF</button></p>`);
-  w.document.close();
-}
+  w.document.write(`<title>Interview kit — ${esc(name)}</title><style>${css}</style><h1>Interview kit — ${esc(name)}</h1><small>${role?"Role: "+esc(role)+" · ":""}TalentLens · ${new Date().toLocaleDateString()}</small>
+    ${(k.questions||[]).map(q=>`<div class="area">${esc(q.area||"")}</div><div class="q">${esc(q.question)}</div>${q.whatGoodLooksLike?`<div class="g">Strong answer: ${esc(q.whatGoodLooksLike)}</div>`:""}`).join("")}
+    <h2>Follow-up probes</h2><ul>${(k.probes||[]).map(p=>`<li>${esc(p)}</li>`).join("")}</ul><h2>Watch-outs</h2><ul>${(k.redFlags||[]).map(p=>`<li>${esc(p)}</li>`).join("")}</ul>
+    <p style="margin-top:24px"><button onclick="print()">Print / Save as PDF</button></p>`);w.document.close();}
 
 /* ---------- Skills Graph ---------- */
 let graphAnim=null;
 async function renderSkills(){
-  const v=$("#view"); const docs=selectedDocs();
-  if(!state.docs.length){ v.innerHTML=heroEmpty(); bindHero(); return; }
-  if(!docs.length){ v.innerHTML=needDocs({title:"Select documents",body:"Pick the CVs and roles you want mapped, and TalentLens will chart the shared skills landscape."}); bindHero2(); return; }
-  v.innerHTML=`<div class="graph-wrap"><div class="loader" style="position:absolute;inset:0">${`<div class="spin"></div><div>Mapping the skills landscape…</div>`}</div></div>`;
-  try{
-    const sig="graph:"+docs.map(d=>d.id).join(",");
-    let g=state.cache[sig];
-    if(!g){
-      const prompt=`Extract a skills/competency knowledge graph across these recruitment documents.
-JSON only: {"nodes":[{"id":"unique short id","label":"display","group":"candidate"|"skill"|"role"|"domain"}],"edges":[{"from":"id","to":"id"}]}
-Rules: make each candidate (CV) and each role (JD) a node; connect them to the SKILLS and DOMAINS evidenced in their text. Merge equivalent skills. 18-34 nodes max. Use real content only.
+  if(!state.apiKey){renderFocusHead("");$("#view").innerHTML='<div class="view-pad">'+noKeyCard()+'</div>';return;}
+  renderFocusHead();const v=$("#view");const docs=selectedDocs();
+  if(!state.docs.length){v.innerHTML=needDocs("No documents yet","Add CVs and roles and TalentLens maps the shared skills.");bindNd();return;}
+  if(!docs.length){v.innerHTML=needDocs("Select documents","Pick the CVs and roles you want mapped.");bindNd();return;}
+  v.innerHTML=`<div class="graph-wrap"><div class="loader" style="position:absolute;inset:0"><div class="spin"></div><div>Mapping the skills landscape…</div></div></div>`;
+  try{const sig="graph:"+docs.map(d=>d.id).join(",");let g=state.cache[sig];
+    if(!g){const prompt=`Extract a skills/competency knowledge graph across these recruitment documents. JSON only:
+{"nodes":[{"id":"short id","label":"display","group":"candidate"|"skill"|"role"|"domain"}],"edges":[{"from":"id","to":"id"}]}
+Rules: make each candidate (CV) and each role (JD) a node; connect them to SKILLS and DOMAINS evidenced in their text. Merge equivalent skills. 18-34 nodes max. Real content only.
 ${docContext(docs,8000)}`;
-      g=parseJSON(await gemini(prompt,{json:true,temp:0.3})); state.cache[sig]=g;
-    }
+      g=parseJSON(await gemini(prompt,{json:true,temp:0.3}));state.cache[sig]=g;}
     drawGraph(g);
-  }catch(e){ v.querySelector(".graph-wrap").innerHTML=`<div class="empty"><p class="muted">${e.message}</p></div>`; }
+  }catch(e){v.querySelector(".graph-wrap").innerHTML=`<div class="empty"><p class="muted">${e.message}</p></div>`;}
 }
 function drawGraph(g){
   const v=$("#view");
   v.innerHTML=`<div class="graph-wrap"><canvas id="graphCanvas"></canvas>
-    <div class="graph-legend">
-      <span class="lg"><i style="background:#2dd4a7"></i>Candidate</span>
-      <span class="lg"><i style="background:#e0a64b"></i>Role</span>
-      <span class="lg"><i style="background:#7aa2ff"></i>Skill</span>
-      <span class="lg"><i style="background:#c98bff"></i>Domain</span>
-    </div></div>`;
-  const cv=$("#graphCanvas"), ctx=cv.getContext("2d");
-  const wrap=cv.parentElement; const dpr=Math.min(window.devicePixelRatio||1,2);
-  function size(){ cv.width=wrap.clientWidth*dpr; cv.height=wrap.clientHeight*dpr; cv.style.width=wrap.clientWidth+"px"; cv.style.height=wrap.clientHeight+"px"; }
-  size();
-  const W=()=>cv.width/dpr, H=()=>cv.height/dpr;
-  const colors={candidate:"#2dd4a7",role:"#e0a64b",skill:"#7aa2ff",domain:"#c98bff"};
+    <div class="graph-legend"><span class="lg"><i style="background:#2DD4BF"></i>Candidate</span><span class="lg"><i style="background:#C69B3C"></i>Role</span><span class="lg"><i style="background:#7aa2ff"></i>Skill</span><span class="lg"><i style="background:#c98bff"></i>Domain</span></div></div>`;
+  const cv=$("#graphCanvas"),ctx=cv.getContext("2d"),wrap=cv.parentElement,dpr=Math.min(window.devicePixelRatio||1,2);
+  function size(){cv.width=wrap.clientWidth*dpr;cv.height=wrap.clientHeight*dpr;cv.style.width=wrap.clientWidth+"px";cv.style.height=wrap.clientHeight+"px";}
+  size();const W=()=>cv.width/dpr,H=()=>cv.height/dpr;
+  const colors={candidate:"#2DD4BF",role:"#C69B3C",skill:"#7aa2ff",domain:"#c98bff"};
   const css=getComputedStyle(document.documentElement);
-  const ink=css.getPropertyValue("--ink").trim(), line=css.getPropertyValue("--line").trim(), faint=css.getPropertyValue("--ink-faint").trim();
-  const nodes=g.nodes.map(n=>({...n,x:W()/2+(Math.random()-.5)*200,y:H()/2+(Math.random()-.5)*200,vx:0,vy:0,
-    r:(n.group==="candidate"||n.group==="role")?13:8}));
-  const idx={}; nodes.forEach((n,i)=>idx[n.id]=i);
+  const ink=css.getPropertyValue("--ink").trim(),line=css.getPropertyValue("--line").trim(),faint=css.getPropertyValue("--ink-faint").trim();
+  const nodes=g.nodes.map(n=>({...n,x:W()/2+(Math.random()-.5)*220,y:H()/2+(Math.random()-.5)*220,vx:0,vy:0,r:(n.group==="candidate"||n.group==="role")?14:8}));
+  const idx={};nodes.forEach((n,i)=>idx[n.id]=i);
   const edges=(g.edges||[]).filter(e=>idx[e.from]!=null&&idx[e.to]!=null);
-  const deg={}; edges.forEach(e=>{deg[e.from]=(deg[e.from]||0)+1;deg[e.to]=(deg[e.to]||0)+1});
-  nodes.forEach(n=>{ if(n.group==="skill"||n.group==="domain") n.r=8+Math.min(7,(deg[n.id]||0)*1.5); });
-  let drag=null, off={x:0,y:0};
-  function pt(e){ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; }
-  cv.onmousedown=e=>{ const p=pt(e); for(const n of nodes){ if(Math.hypot(n.x-p.x,n.y-p.y)<n.r+5){ drag=n; off={x:n.x-p.x,y:n.y-p.y}; cv.style.cursor="grabbing"; break; } } };
-  window.addEventListener("mousemove",mv); function mv(e){ if(!drag)return; const p=pt(e); drag.x=p.x+off.x; drag.y=p.y+off.y; drag.vx=drag.vy=0; }
-  window.addEventListener("mouseup",()=>{ drag=null; cv.style.cursor="grab"; });
+  const deg={};edges.forEach(e=>{deg[e.from]=(deg[e.from]||0)+1;deg[e.to]=(deg[e.to]||0)+1});
+  nodes.forEach(n=>{if(n.group==="skill"||n.group==="domain")n.r=8+Math.min(7,(deg[n.id]||0)*1.5);});
+  let drag=null,off={x:0,y:0};
+  function ptXY(cx,cy){const r=cv.getBoundingClientRect();return{x:cx-r.left,y:cy-r.top};}
+  function startAt(p){for(const n of nodes){if(Math.hypot(n.x-p.x,n.y-p.y)<n.r+8){drag=n;off={x:n.x-p.x,y:n.y-p.y};return true;}}return false;}
+  cv.onmousedown=e=>{if(startAt(ptXY(e.clientX,e.clientY)))cv.style.cursor="grabbing";};
+  window.addEventListener("mousemove",mv);function mv(e){if(!drag)return;const p=ptXY(e.clientX,e.clientY);drag.x=p.x+off.x;drag.y=p.y+off.y;drag.vx=drag.vy=0;}
+  window.addEventListener("mouseup",()=>{drag=null;cv.style.cursor="grab";});
+  cv.addEventListener("touchstart",e=>{const t=e.touches[0];if(t&&startAt(ptXY(t.clientX,t.clientY)))e.preventDefault();},{passive:false});
+  cv.addEventListener("touchmove",e=>{if(!drag)return;const t=e.touches[0];if(!t)return;const p=ptXY(t.clientX,t.clientY);drag.x=p.x+off.x;drag.y=p.y+off.y;drag.vx=drag.vy=0;e.preventDefault();},{passive:false});
+  cv.addEventListener("touchend",()=>{drag=null;});
   function step(){
-    for(let i=0;i<nodes.length;i++){ const a=nodes[i];
-      for(let j=i+1;j<nodes.length;j++){ const b=nodes[j];
-        let dx=a.x-b.x,dy=a.y-b.y,d=Math.hypot(dx,dy)||1; const f=2600/(d*d);
-        const fx=dx/d*f,fy=dy/d*f; a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy; }
-      a.vx+=(W()/2-a.x)*0.0015; a.vy+=(H()/2-a.y)*0.0015;
-    }
-    for(const e of edges){ const a=nodes[idx[e.from]],b=nodes[idx[e.to]];
-      let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1; const f=(d-90)*0.012;
-      const fx=dx/d*f,fy=dy/d*f; a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy; }
-    for(const n of nodes){ if(n===drag)continue; n.vx*=0.86;n.vy*=0.86; n.x+=n.vx; n.y+=n.vy;
-      n.x=Math.max(n.r+6,Math.min(W()-n.r-6,n.x)); n.y=Math.max(n.r+6,Math.min(H()-n.r-6,n.y)); }
-    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W(),H());
-    ctx.strokeStyle=line; ctx.lineWidth=1;
-    for(const e of edges){ const a=nodes[idx[e.from]],b=nodes[idx[e.to]];
-      ctx.globalAlpha=.55; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); }
-    ctx.globalAlpha=1;
-    ctx.font="500 11px Inter, sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
-    for(const n of nodes){
-      const c=colors[n.group]||"#888";
-      ctx.beginPath(); ctx.arc(n.x,n.y,n.r,0,7); ctx.fillStyle=c; ctx.fill();
-      if(n.group==="candidate"||n.group==="role"){ ctx.lineWidth=2; ctx.strokeStyle=c; ctx.globalAlpha=.3; ctx.beginPath(); ctx.arc(n.x,n.y,n.r+4,0,7); ctx.stroke(); ctx.globalAlpha=1; }
+    for(let i=0;i<nodes.length;i++){const a=nodes[i];
+      for(let j=i+1;j<nodes.length;j++){const b=nodes[j];let dx=a.x-b.x,dy=a.y-b.y,d=Math.hypot(dx,dy)||1;const f=2800/(d*d);const fx=dx/d*f,fy=dy/d*f;a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy;}
+      a.vx+=(W()/2-a.x)*0.0015;a.vy+=(H()/2-a.y)*0.0015;}
+    for(const e of edges){const a=nodes[idx[e.from]],b=nodes[idx[e.to]];let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1;const f=(d-92)*0.012;const fx=dx/d*f,fy=dy/d*f;a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy;}
+    for(const n of nodes){if(n===drag)continue;n.vx*=0.86;n.vy*=0.86;n.x+=n.vx;n.y+=n.vy;n.x=Math.max(n.r+6,Math.min(W()-n.r-6,n.x));n.y=Math.max(n.r+6,Math.min(H()-n.r-6,n.y));}
+    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W(),H());
+    ctx.strokeStyle=line;ctx.lineWidth=1;
+    for(const e of edges){const a=nodes[idx[e.from]],b=nodes[idx[e.to]];ctx.globalAlpha=.5;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+    ctx.globalAlpha=1;ctx.textAlign="center";ctx.textBaseline="middle";
+    for(const n of nodes){const c=colors[n.group]||"#888";
       const big=n.group==="candidate"||n.group==="role";
-      ctx.fillStyle=big?ink:faint;
-      ctx.font=(big?"600 ":"450 ")+(big?12:10.5)+"px Inter, sans-serif";
-      const lbl=n.label.length>22?n.label.slice(0,21)+"…":n.label;
-      ctx.fillText(lbl,n.x,n.y+n.r+9);
-    }
-    graphAnim=requestAnimationFrame(step);
-  }
-  if(graphAnim) cancelAnimationFrame(graphAnim);
-  step();
-  window.addEventListener("resize",()=>{ if(state.tab==="skills"){size();} });
+      if(big){ctx.shadowColor=c;ctx.shadowBlur=16;}
+      ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,7);ctx.fillStyle=c;ctx.fill();ctx.shadowBlur=0;
+      if(big){ctx.lineWidth=2;ctx.strokeStyle=c;ctx.globalAlpha=.3;ctx.beginPath();ctx.arc(n.x,n.y,n.r+5,0,7);ctx.stroke();ctx.globalAlpha=1;}
+      ctx.fillStyle=big?ink:faint;ctx.font=(big?"600 12px":"450 10.5px")+" Inter, sans-serif";
+      const lbl=n.label.length>22?n.label.slice(0,21)+"…":n.label;ctx.fillText(lbl,n.x,n.y+n.r+10);}
+    graphAnim=requestAnimationFrame(step);}
+  if(graphAnim)cancelAnimationFrame(graphAnim);step();
+  window.addEventListener("resize",()=>{if(state.tab==="skills")size();});
 }
 
 /* ---------- Chat ---------- */
-function renderScope(){
-  const sel=selectedDocs();
-  const sc=$("#scope");
-  if(!sel.length){ sc.innerHTML="No documents selected — answering from general knowledge."; $("#chatInput").placeholder="Ask anything…"; }
-  else{ sc.innerHTML=`Grounded in <b>${sel.length} document${sel.length>1?"s":""}</b> · ${selCVs().length} CV · ${selJDs().length} JD`; $("#chatInput").placeholder="Ask about the selected documents…"; }
+/* ---------- AI Agent (orchestrated trace) ---------- */
+let agentRunning=false;
+const agentTrace=[];
+function fmtEl(t0){return ((performance.now()-t0)/1000).toFixed(1)+"s";}
+function traceRender(){
+  const el=document.querySelector("#agentTrace"); if(!el)return;
+  el.innerHTML=agentTrace.map((s,i)=>`
+    <div class="step ${s.status}">
+      <div class="step-rail"><span class="step-dot"></span>${i<agentTrace.length-1?'<span class="step-line"></span>':''}</div>
+      <div class="step-body">
+        <div class="step-head"><span class="step-n">STEP ${i+1}</span><span class="step-label">${esc(s.label)}</span>
+          <span class="step-status">${s.status==="running"?'<span class="typing"><i></i><i></i><i></i></span><span class="step-el">'+fmtEl(s.t0)+'</span>':s.status==="done"?(s.ms?s.ms+" ms":"done"):s.status==="error"?"failed":""}</span></div>
+        ${s.detail?`<div class="step-detail">${s.detail}</div>`:""}
+      </div>
+    </div>`).join("");
 }
-function renderChat(){
-  const sc=$("#chatScroll");
-  if(!state.chat.length){
-    sc.innerHTML=`<div class="msg a"><div class="who">TalentLens</div><div class="bubble">I’m your recruitment co-pilot. Select documents on the left and I’ll answer with page citations — or ask me anything and I’ll answer from general knowledge.
-      <div class="suggest">
-        <button>Summarise this candidate in 3 bullet points</button>
-        <button>What are the must-have requirements in this role?</button>
-        <button>Which candidate is strongest for this job and why?</button>
-      </div></div></div>`;
-    sc.querySelectorAll(".suggest button").forEach(b=>b.onclick=()=>{ $("#chatInput").value=b.textContent; send(); });
-    return;
-  }
+let agentTick=null;
+function agentTickStart(){clearInterval(agentTick);agentTick=setInterval(()=>{const s=agentTrace.find(x=>x.status==="running");const el=document.querySelector("#agentTrace .step.running .step-el");if(s&&el)el.textContent=fmtEl(s.t0);},250);}
+function agentTickStop(){clearInterval(agentTick);agentTick=null;}
+function noKeyCard(){return `<div class="card keycard"><div class="kc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="15" r="4"/><path d="M9.8 12.2 21 1m-4 4 3 3m-6.2-1.8 2.4 2.4"/></svg></div><div><h3 style="margin:0 0 4px">Add your Gemini API key to begin</h3><p class="muted" style="margin:0 0 13px;max-width:440px">TalentLens runs on your own free Gemini key — it stays in your browser and is never sent anywhere else. Paste it in the field at the top right and this unlocks instantly.</p><a class="btn primary" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Get a free key →</a></div></div>`;}
+function stepStart(label){const s={label,status:"running",detail:"",t0:performance.now()};agentTrace.push(s);traceRender();return s;}
+function stepDone(s,detail){s.status="done";s.ms=Math.round(performance.now()-s.t0);if(detail!=null)s.detail=detail;traceRender();}
+function agentMini(scores){return scores.map((r,i)=>`<div class="mini-rank"><span class="mr-n">${i+1}</span><span style="width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${i===0?"color:var(--gold)":""}">${esc(r._name)}</span><span class="mini-bar"><span style="width:${+r.overall||0}%"></span></span><span class="mono" style="font-size:12px">${esc(r.overall)}</span></div>`).join("");}
+function renderAgent(){
+  renderFocusHead("");
+  const v=$("#view");const jds=selJDs(),cvs=selCVs();
+  if(!state.docs.length){v.innerHTML=needDocs("No documents yet","Add candidate CVs and a job description, then run the agent.");bindNd();return;}
+  if(!jds.length||!cvs.length){v.innerHTML=needDocs("Need a role and candidates","Select one job description and at least one CV in the rail, then run the agent.");bindNd();return;}
+  const jd=jds[0];
+  v.innerHTML=`<div class="view-pad">
+    <div class="card agent-goal">
+      <div class="eyebrow">Agent goal</div>
+      <div class="goal-row">
+        <input id="agentGoal" value="Find the strongest candidate for ${esc(jd.name)} and justify the recommendation." />
+        <button class="btn primary" id="agentRun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>Run agent</button>
+      </div>
+      <p class="muted" style="margin:10px 0 0;font-size:12.5px">The agent runs a multi-step workflow: <b>plan → extract the role's true requirements → score each candidate → cross-check the leader → synthesise a cited recommendation.</b> Each step streams below.</p>
+    </div>
+    <div id="agentTrace" class="agent-trace"></div>
+    <div id="agentResult"></div>
+  </div>`;
+  $("#agentRun").onclick=runAgent;
+}
+async function runAgent(){
+  if(agentRunning)return;
+  if(!state.apiKey){const ar=$("#agentResult");if(ar)ar.innerHTML=noKeyCard();return;}
+  agentRunning=true;agentTrace.length=0;agentTickStart();
+  const jd=selJDs()[0],cvs=selCVs();
+  const goalEl=$("#agentGoal");const goal=goalEl?goalEl.value.trim():"Recommend the best candidate.";
+  const btn=$("#agentRun");if(btn){btn.disabled=true;}
+  $("#agentResult").innerHTML="";
+  try{
+    let s=stepStart("Plan the approach");
+    const plan=parseJSON(await gemini(`You are an autonomous recruiting agent. Goal: "${goal}". You have one job description and ${cvs.length} candidate CV(s). Output your plan as JSON only: {"steps":["short step", ...]} with 4-6 concise steps you will take.`,{json:true,temp:0.3}));
+    stepDone(s,`<ol class="plan">${(plan.steps||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`);
+
+    s=stepStart("Extract the role's true requirements");
+    const reqSig="agentreq:"+jd.id;let req=state.cache[reqSig];
+    if(!req){req=parseJSON(await gemini(`Extract hiring requirements from this job description. JSON only: {"mustHaves":["..."],"niceToHaves":["..."],"seniority":"...","domain":"..."}. From the text only.
+ROLE ${jd.name}: ${jd.pages.map(p=>p.text).join(" ").slice(0,5000)}`,{json:true,temp:0.2}));state.cache[reqSig]=req;}
+    stepDone(s,`<div class="eyebrow">Must-haves</div><div class="chips">${(req.mustHaves||[]).map(x=>`<span class="chip good">${esc(x)}</span>`).join("")||'<span class="faint">—</span>'}</div><div class="eyebrow" style="margin-top:10px">Nice-to-have</div><div class="chips">${(req.niceToHaves||[]).map(x=>`<span class="chip">${esc(x)}</span>`).join("")||'<span class="faint">—</span>'}</div>`);
+
+    s=stepStart("Score each candidate against the requirements");
+    const scores=[];
+    for(const cv of cvs){
+      const sig="agentscore:"+jd.id+":"+cv.id;let r=state.cache[sig];
+      if(!r){r=parseJSON(await gemini(`Score this candidate against the role requirements. JSON only: {"overall":0-100,"verdict":"strong fit"|"possible fit"|"weak fit","topStrength":"3-6 words","topGap":"3-6 words"}. Honest, evidence-based, from text only.
+REQUIREMENTS must-haves: ${(req.mustHaves||[]).join("; ")}
+ROLE ${jd.name}: ${jd.pages.map(p=>p.text).join(" ").slice(0,2500)}
+CANDIDATE ${cv.name}: ${cv.pages.map(p=>p.text).join(" ").slice(0,4000)}`,{json:true,temp:0.2}));r._name=cv.name;state.cache[sig]=r;}
+      scores.push(r);scores.sort((a,b)=>b.overall-a.overall);s.detail=agentMini(scores);traceRender();
+    }
+    scores.sort((a,b)=>b.overall-a.overall);stepDone(s,agentMini(scores));
+
+    s=stepStart("Cross-check the leading candidate");
+    const top=scores[0];const topDoc=state.docs.find(d=>d.name===top._name);
+    const cross=parseJSON(await gemini(`The leading candidate is "${top._name}". Verify against the role's must-haves. JSON only: {"unmet":["must-haves not evidenced"],"risks":["things to probe in interview"],"confidence":"high"|"medium"|"low"}. From text only.
+MUST-HAVES: ${(req.mustHaves||[]).join("; ")}
+CANDIDATE ${top._name}: ${(topDoc?topDoc.pages:[]).map(p=>p.text).join(" ").slice(0,4000)}`,{json:true,temp:0.2}));
+    stepDone(s,`<div class="muted" style="margin-bottom:8px">Confidence in the leader: <b style="color:var(--ink)">${esc(cross.confidence||"—")}</b></div><div class="eyebrow">Unmet must-haves</div><div class="chips">${(cross.unmet||[]).map(x=>`<span class="chip gap">${esc(x)}</span>`).join("")||'<span class="chip good">none</span>'}</div><div class="eyebrow" style="margin-top:10px">Risks to probe</div><div class="chips">${(cross.risks||[]).map(x=>`<span class="chip">${esc(x)}</span>`).join("")||'<span class="faint">—</span>'}</div>`);
+
+    s=stepStart("Synthesise the recommendation");
+    const summary=await gemini(`Write a concise hiring recommendation (4-6 sentences) for the goal: "${goal}". Rank the candidates, justify the top pick against the role's requirements, and name the single most important thing to probe in interview. Reference candidates by name. Plain text, no markdown headers.
+SCORES: ${scores.map(x=>x._name+" "+x.overall+" ("+x.verdict+")").join("; ")}
+LEADER RISKS: ${(cross.risks||[]).join("; ")||"none noted"}`,{temp:0.4});
+    stepDone(s,"");
+
+    $("#agentResult").innerHTML=`<div class="card final-card" style="margin-top:6px">
+      <div class="eyebrow">Agent recommendation</div>
+      <div class="scorewrap" style="margin:12px 0 2px">${halo("md",top.overall,"fit")}
+        <div style="flex:1;min-width:0"><div class="between"><h3 data-jump="${esc(top._name)}" style="cursor:pointer">${esc(top._name)}</h3><span class="verdict ${vClass(top.verdict)}">${esc(top.verdict)}</span></div>
+        <p class="muted" style="margin:6px 0 0">${esc(summary)}</p></div></div>
+      <div class="eyebrow" style="margin-top:16px">Final ranking</div>${agentMini(scores)}
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+        <button class="btn primary" data-go-int="1">Interview kit for the leader →</button>
+        <button class="btn" data-go2b="shortlist">Open full shortlist →</button>
+      </div></div>`;
+    const r1=$("#agentResult");
+    r1.querySelectorAll("[data-go2b]").forEach(b=>b.onclick=()=>goTab(b.getAttribute("data-go2b")));
+    r1.querySelectorAll("[data-go-int]").forEach(b=>b.onclick=()=>{const sel=$("#ivPick");goTab("interview");});
+  }catch(e){
+    const retryBtn=`<button class="btn" id="agentRetry" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg>Retry</button>`;
+    if(agentTrace.length){const last=agentTrace[agentTrace.length-1];last.status="error";last.detail=`<div style="color:var(--bad);margin-bottom:2px">${esc(e.message)}</div><div class="faint" style="font-size:11.5px">Completed steps are cached — retry resumes from here.</div>${retryBtn}`;traceRender();}
+    else $("#agentResult").innerHTML=`<div class="card"><p class="muted" style="margin:0">${esc(e.message)}</p>${retryBtn}</div>`;
+    const rt=$("#agentRetry");if(rt)rt.onclick=runAgent;
+  }finally{agentRunning=false;agentTickStop();const b=$("#agentRun");if(b){b.disabled=false;b.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg>Re-run agent`;}}
+}
+
+
+function renderScope(){const sel=selectedDocs();const sc=$("#scope");
+  if(!sel.length){sc.innerHTML="No documents selected — general knowledge mode.";$("#chatInput").placeholder="Ask anything…";}
+  else{sc.innerHTML=`Grounded in <b>${sel.length} doc${sel.length>1?"s":""}</b> · ${selCVs().length} CV · ${selJDs().length} JD`;$("#chatInput").placeholder="Ask about the selected documents…";}}
+function renderChat(){const sc=$("#chatScroll");
+  if(!state.chat.length){sc.innerHTML=`<div class="msg a"><div class="who">TalentLens</div><div class="bubble">Your recruitment co-pilot. Select documents and I answer with page citations — or ask anything for a general answer.
+    <div class="suggest"><button>Summarise this candidate in 3 bullets</button><button>What are the must-have requirements in this role?</button><button>Which candidate is strongest, and why?</button></div></div></div>`;
+    sc.querySelectorAll(".suggest button").forEach(b=>b.onclick=()=>{$("#chatInput").value=b.textContent;send();});return;}
   sc.innerHTML=state.chat.map(m=>{
-    if(m.role==="u") return `<div class="msg u">${escapeHtml(m.text)}</div>`;
-    if(m.role==="typing") return `<div class="msg a"><div class="who">TalentLens</div><div class="bubble"><span class="typing"><i></i><i></i><i></i></span></div></div>`;
+    if(m.role==="u")return `<div class="msg u">${escapeHtml(m.text)}</div>`;
+    if(m.role==="typing")return `<div class="msg a"><div class="who">TalentLens</div><div class="bubble"><span class="typing"><i></i><i></i><i></i></span></div></div>`;
     return `<div class="msg a"><div class="who">TalentLens</div><div class="bubble">${m.off?`<div class="offdoc">⚡ General knowledge — outside your documents</div>`:""}${m.html}</div></div>`;
   }).join("");
   sc.querySelectorAll(".cite").forEach(c=>c.onclick=()=>jumpTo(c.dataset.name,+c.dataset.page));
-  sc.scrollTop=sc.scrollHeight;
-}
-function escapeHtml(s){ return s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
-function formatAnswer(txt){
-  let off=false;
-  if(/^\s*\[OFFDOC\]/.test(txt)){ off=true; txt=txt.replace(/^\s*\[OFFDOC\]\s*/,""); }
+  sc.scrollTop=sc.scrollHeight;}
+function escapeHtml(s){return s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function formatAnswer(txt){let off=false;
+  if(/^\s*\[OFFDOC\]/.test(txt)){off=true;txt=txt.replace(/^\s*\[OFFDOC\]\s*/,"");}
   let html=escapeHtml(txt);
-  // citations like (Name, p.3) or (Name p.3)
-  html=html.replace(/\(([^()]{1,60}?)[,·]?\s*p\.?\s*(\d+)\)/gi,(m,name,page)=>{
-    const n=name.trim();
-    return `<span class="cite" data-name="${n.replace(/"/g,'')}" data-page="${page}">¶ ${n} p.${page}</span>`;
-  });
+  html=html.replace(/\(([^()]{1,60}?)[,·]?\s*p\.?\s*(\d+)\)/gi,(m,name,page)=>`<span class="cite" data-name="${name.trim().replace(/"/g,'')}" data-page="${page}">¶ ${name.trim()} p.${page}</span>`);
   html=html.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/\n\s*[-•]\s+/g,"<br>• ").replace(/\n{2,}/g,"<br><br>").replace(/\n/g,"<br>");
-  return {html,off};
-}
-async function send(){
-  const inp=$("#chatInput"); const q=inp.value.trim(); if(!q) return;
-  inp.value=""; inp.style.height="auto";
-  state.chat.push({role:"u",text:q}); state.chat.push({role:"typing"}); renderChat();
+  return{html,off};}
+async function send(){const inp=$("#chatInput");const q=inp.value.trim();if(!q)return;
+  inp.value="";inp.style.height="auto";
+  state.chat.push({role:"u",text:q});state.chat.push({role:"typing"});renderChat();
   const sel=selectedDocs();
-  try{
-    let prompt,system;
-    if(sel.length){
-      system=`You are TalentLens, a precise recruitment analyst. Answer using ONLY the provided documents when the question relates to them. Cite evidence inline as (DocName, p.N) using the exact document names and page numbers shown in the context. If the question is general and unrelated to the documents, you MAY answer from general knowledge but you MUST prefix your whole reply with [OFFDOC]. Be concise and direct. Never invent candidates, facts, or page numbers.`;
-      prompt=`CONTEXT DOCUMENTS:\n${docContext(sel)}\n\nQUESTION: ${q}`;
-    }else{
-      system=`You are TalentLens, a sharp recruitment co-pilot. No documents are loaded. Answer helpfully from general knowledge and prefix your reply with [OFFDOC].`;
-      prompt=q;
-    }
-    const ans=await gemini(prompt,{system,temp:0.4});
-    const {html,off}=formatAnswer(ans);
-    state.chat.pop(); state.chat.push({role:"a",html,off}); renderChat();
-  }catch(e){
-    state.chat.pop(); state.chat.push({role:"a",html:`<span style="color:var(--bad)">${e.message}</span>`,off:false}); renderChat();
-  }
-}
+  try{let prompt,system;
+    if(sel.length){system=`You are TalentLens, a precise recruitment analyst. Answer using ONLY the provided documents when the question relates to them. Cite evidence inline as (DocName, p.N) using exact names/pages from context. If the question is general and unrelated to the documents, you MAY answer from general knowledge but MUST prefix the whole reply with [OFFDOC]. Be concise. Never invent candidates, facts, or page numbers.`;
+      prompt=`CONTEXT DOCUMENTS:\n${docContext(sel)}\n\nQUESTION: ${q}`;}
+    else{system=`You are TalentLens, a sharp recruitment co-pilot. No documents loaded. Answer from general knowledge and prefix with [OFFDOC].`;prompt=q;}
+    const ans=await gemini(prompt,{system,temp:0.4});const{html,off}=formatAnswer(ans);
+    state.chat.pop();state.chat.push({role:"a",html,off});renderChat();
+  }catch(e){state.chat.pop();state.chat.push({role:"a",html:`<span style="color:var(--bad)">${e.message}</span>`,off:false});renderChat();}}
 
-/* ---------------- wiring ---------------- */
-$("#fileInput").addEventListener("change",e=>{ ingest([...e.target.files]); e.target.value=""; });
+/* ---------- command palette ---------- */
+const CMDS=[
+  ...STAGES.map(s=>({label:"Go to "+s.label,icon:s.icon,run:()=>goTab(s.id),num:s.num})),
+  {label:"Add documents",icon:`<path d="M12 5v14M5 12h14"/>`,run:()=>$("#fileInput").click()},
+  {label:"Select all documents",icon:`<path d="M4 12l5 5L20 6"/>`,run:()=>$("#selectAll").click()},
+  {label:"Clear selection",icon:`<path d="M6 6l12 12M18 6L6 18"/>`,run:()=>$("#clearSel").click()},
+  {label:"Toggle theme",icon:`<circle cx="12" cy="12" r="4"/>`,run:()=>$("#themeBtn").click()},
+  {label:"Clear conversation",icon:`<path d="M3 6h18M8 6V4h8v2"/>`,run:()=>$("#clearChat").click()}
+];
+let cmdSel=0,cmdFiltered=CMDS;
+function openCmdk(){$("#cmdk").classList.add("open");$("#cmdkInput").value="";cmdFiltered=CMDS;cmdSel=0;renderCmd();setTimeout(()=>$("#cmdkInput").focus(),20);}
+function closeCmdk(){$("#cmdk").classList.remove("open");}
+function renderCmd(){$("#cmdkList").innerHTML=cmdFiltered.map((c,i)=>`<div class="cmd ${i===cmdSel?"sel":""}" data-i="${i}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${c.icon}</svg></span><span>${c.label}</span>${c.num?`<span class="num">${c.num}</span>`:""}</div>`).join("")||`<div class="cmd faint">No matches</div>`;
+  $("#cmdkList").querySelectorAll("[data-i]").forEach(el=>el.onclick=()=>{cmdFiltered[+el.dataset.i].run();closeCmdk();});}
+$("#cmdkOpen").onclick=openCmdk;
+$("#cmdkInput")&&$("#cmdkInput").addEventListener("input",e=>{const q=e.target.value.toLowerCase();cmdFiltered=CMDS.filter(c=>c.label.toLowerCase().includes(q));cmdSel=0;renderCmd();});
+document.addEventListener("keydown",e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();$("#cmdk").classList.contains("open")?closeCmdk():openCmdk();return;}
+  if(!$("#cmdk").classList.contains("open"))return;
+  if(e.key==="Escape")closeCmdk();
+  else if(e.key==="ArrowDown"){e.preventDefault();cmdSel=Math.min(cmdFiltered.length-1,cmdSel+1);renderCmd();}
+  else if(e.key==="ArrowUp"){e.preventDefault();cmdSel=Math.max(0,cmdSel-1);renderCmd();}
+  else if(e.key==="Enter"&&cmdFiltered[cmdSel]){cmdFiltered[cmdSel].run();closeCmdk();}});
+$("#cmdk").addEventListener("click",e=>{if(e.target.id==="cmdk")closeCmdk();});
+
+/* ---------- wiring ---------- */
+$("#fileInput").addEventListener("change",e=>{ingest([...e.target.files]);e.target.value="";});
 $("#drop").addEventListener("click",()=>$("#fileInput").click());
 ["dragover","dragenter"].forEach(ev=>$("#drop").addEventListener(ev,e=>{e.preventDefault();$("#drop").classList.add("drag");}));
 ["dragleave","drop"].forEach(ev=>$("#drop").addEventListener(ev,e=>{e.preventDefault();$("#drop").classList.remove("drag");}));
 $("#drop").addEventListener("drop",e=>ingest([...e.dataTransfer.files]));
+$("#selectAll").onclick=()=>{state.docs.forEach(d=>d.sel=true);renderDocs();renderScope();refreshTab();};
+$("#clearSel").onclick=()=>{state.docs.forEach(d=>d.sel=false);renderDocs();renderScope();refreshTab();};
 
-$("#selectAll").onclick=()=>{ state.docs.forEach(d=>d.sel=true); renderDocs(); renderScope(); refreshTab(); };
-$("#clearSel").onclick=()=>{ state.docs.forEach(d=>d.sel=false); renderDocs(); renderScope(); refreshTab(); };
+const keyInput=$("#apiKey");keyInput.value=state.apiKey;let keyTimer;
+keyInput.addEventListener("input",()=>{state.apiKey=keyInput.value.trim();store.set("tl_key",state.apiKey);clearTimeout(keyTimer);$("#keyDot").className="dot";keyTimer=setTimeout(checkKey,700);});
 
-const keyInput=$("#apiKey"); keyInput.value=state.apiKey;
-let keyTimer;
-keyInput.addEventListener("input",()=>{ state.apiKey=keyInput.value.trim(); store.set("tl_key",state.apiKey);
-  clearTimeout(keyTimer); $("#keyDot").className="dot"; keyTimer=setTimeout(checkKey,700); });
-
-$("#themeBtn").onclick=()=>{
-  const cur=document.documentElement.getAttribute("data-theme");
-  const next=cur==="dark"?"light":"dark";
-  document.documentElement.setAttribute("data-theme",next); store.set("tl_theme",next);
-  $("#themeIcon").innerHTML=next==="dark"?`<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>`:`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`;
-};
-$("#clearChat").onclick=()=>{ state.chat=[]; renderChat(); };
+$("#themeBtn").onclick=()=>{const cur=document.documentElement.getAttribute("data-theme");const next=cur==="dark"?"light":"dark";
+  document.documentElement.setAttribute("data-theme",next);store.set("tl_theme",next);setThemeIcon(next);if(state.tab==="skills")refreshTab();};
+function setThemeIcon(t){$("#themeIcon").innerHTML=t==="dark"?`<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>`:`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`;}
+$("#clearChat").onclick=()=>{state.chat=[];renderChat();};
 const ci=$("#chatInput");
-ci.addEventListener("input",()=>{ ci.style.height="auto"; ci.style.height=Math.min(ci.scrollHeight,130)+"px"; });
-ci.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); send(); } });
+ci.addEventListener("input",()=>{ci.style.height="auto";ci.style.height=Math.min(ci.scrollHeight,130)+"px";});
+ci.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}});
 $("#sendBtn").onclick=send;
+$("#view").addEventListener("click",e=>{const t=e.target.closest("[data-jump]");if(t)jumpTo(t.getAttribute("data-jump"),1);});
+$("#nav").addEventListener("mousemove",e=>{const it=e.target.closest(".navitem");if(!it)return;const r=it.getBoundingClientRect();it.style.setProperty("--mx",(e.clientX-r.left)+"px");it.style.setProperty("--my",(e.clientY-r.top)+"px");});
+
+/* mobile drawers */
+function closeDrawers(){document.querySelector(".rail").classList.remove("open");document.querySelector(".chat").classList.remove("open");$("#scrim").classList.remove("show");}
+function openDrawer(sel){const isOpen=document.querySelector(sel).classList.contains("open");closeDrawers();if(!isOpen){document.querySelector(sel).classList.add("open");$("#scrim").classList.add("show");}}
+$("#railToggle").onclick=()=>openDrawer(".rail");
+$("#chatToggle").onclick=()=>openDrawer(".chat");
+$("#scrim").onclick=closeDrawers;
+const isMobile=()=>window.matchMedia("(max-width:920px)").matches;
 
 /* init */
 (function init(){
-  const th=store.get("tl_theme","dark");
-  document.documentElement.setAttribute("data-theme",th);
-  $("#themeIcon").innerHTML = th==="dark"
-    ? `<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>`
-    : `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`;
-  renderDocs(); renderScope(); renderChat();
-  $("#view").innerHTML=heroEmpty(); bindHero();
-  if(state.apiKey) checkKey();
+  const th=store.get("tl_theme","dark");document.documentElement.setAttribute("data-theme",th);setThemeIcon(th);
+  renderNav();renderDocs();renderScope();renderChat();refreshTab();
+  if(state.apiKey)checkKey();
 })();
 </script>
 </body>
