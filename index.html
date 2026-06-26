@@ -436,6 +436,29 @@ html[data-theme="light"] .center::after{filter:invert(1);opacity:.06}
 .uploadzone{padding:11px 12px;margin:4px 14px 8px}
 .doclist{min-height:96px}
 
+/* ===== CONTRAST PASS (legibility over aurora) ===== */
+:root{--ink-dim:#b4bccb;--ink-faint:#8b94a8}
+.tile,.card,.cmdk-box,.qblock,.skel-card,.step-detail,.keycard{background:rgba(14,18,28,.6) !important}
+.ov-primary{background:linear-gradient(135deg,rgba(45,212,191,.18),rgba(124,92,255,.12)),rgba(14,18,28,.62) !important}
+.tile.hero{background:linear-gradient(135deg,rgba(45,212,191,.16),rgba(124,92,255,.10)),rgba(14,18,28,.62) !important}
+.final-card{background:linear-gradient(135deg,rgba(45,212,191,.15),rgba(229,181,103,.10)),rgba(14,18,28,.64) !important}
+.rail,.chat{background:rgba(10,13,21,.66) !important}
+.topbar{background:rgba(9,12,19,.66) !important}
+.composer .box,.keywrap,#agentGoal,select,.btn,.iconbtn,.cmdk-hint{background:rgba(255,255,255,.07) !important}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-deep)) !important}
+.btn.gold{background:linear-gradient(135deg,var(--gold-soft),var(--gold)) !important}
+.navitem.active{background:rgba(255,255,255,.08) !important}
+.navitem .ico{background:rgba(255,255,255,.07)}
+.halo .core{background:rgba(11,15,24,.88)}
+.scope,.reader-bar{background:rgba(255,255,255,.025) !important}
+.uploadzone{background:rgba(255,255,255,.03)}
+.doc.active,.doc:hover{background:rgba(255,255,255,.05)}
+/* light theme keeps its own tokens; only restore card solidity */
+html[data-theme="light"] .tile,html[data-theme="light"] .card,html[data-theme="light"] .cmdk-box,html[data-theme="light"] .keycard{background:rgba(255,255,255,.78) !important}
+html[data-theme="light"] .ov-primary,html[data-theme="light"] .tile.hero{background:linear-gradient(135deg,rgba(14,158,140,.1),rgba(124,92,255,.06)),rgba(255,255,255,.82) !important}
+html[data-theme="light"] .rail,html[data-theme="light"] .chat{background:rgba(255,255,255,.62) !important}
+html[data-theme="light"] .topbar{background:rgba(255,255,255,.66) !important}
+
 body{background:#070A12 !important;background-image:none !important}
 .aurora{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;contain:strict}
 .aurora .blob{position:absolute;border-radius:50%;filter:blur(85px);opacity:.55;will-change:transform}
@@ -840,7 +863,7 @@ async function renderMatch(){
     for(const cv of cvs){const sig="match:"+jd.id+":"+cv.id;let r=state.cache[sig];
       if(!r){const prompt=`You are an expert technical recruiter. Score how well the CANDIDATE fits the ROLE. Return JSON only:
 {"overall":0-100,"verdict":"strong fit"|"possible fit"|"weak fit","summary":"2 sentences","dimensions":[{"name":"Skills match","score":0-100,"note":"short"},{"name":"Experience level","score":0-100,"note":"short"},{"name":"Domain / industry","score":0-100,"note":"short"},{"name":"Role responsibilities","score":0-100,"note":"short"}],"strengths":["..."],"gaps":["..."]}
-Be evidence-based and honest; do not inflate. Base everything ONLY on the text.
+Be evidence-based and honest; do not inflate. Always include 2-4 concrete strengths and 1-3 concrete gaps grounded in the CV text; never leave those arrays empty. Base everything ONLY on the text.
 ROLE — ${jd.name}: ${jd.pages.map(p=>p.text).join(" ").slice(0,5000)}
 CANDIDATE — ${cv.name}: ${cv.pages.map(p=>p.text).join(" ").slice(0,5000)}`;
         r=parseJSON(await gemini(prompt,{json:true,temp:0.2}));r._name=cv.name;state.cache[sig]=r;}
@@ -857,14 +880,15 @@ function matchControls(){const jds=selJDs();
 function bindMatchControls(){
   const re=$("#reMatch");if(re)re.onclick=()=>{const jd=selJDs()[0];selCVs().forEach(cv=>delete state.cache["match:"+(jd&&jd.id)+":"+cv.id]);renderMatch();};
   const pick=$("#jdPick");if(pick)pick.onchange=()=>{const id=+pick.value;state.docs.forEach(d=>{if(d.type==="jd")d.sel=(d.id===id);});renderDocs();renderScope();renderMatch();};}
-function matchCard(r){return `<div class="card"><div class="scorewrap">
+function asList(x){if(Array.isArray(x))return x.map(v=>typeof v==="object"&&v?(v.text||v.label||v.name||JSON.stringify(v)):v).filter(v=>v!=null&&String(v).trim()!=="");if(x==null||x==="")return[];return String(x).split(/[;\n]|, (?=[A-Z])/).map(s=>s.trim()).filter(Boolean);}
+function matchCard(r){const strengths=asList(r.strengths),gaps=asList(r.gaps);return `<div class="card"><div class="scorewrap">
     ${halo("md",r.overall,"fit")}
     <div style="flex:1;min-width:0"><div class="between"><h3 style="cursor:pointer" data-jump="${esc(r._name||'')}">${esc(r._name||"Candidate")}</h3><span class="verdict ${vClass(r.verdict)}">${esc(r.verdict||"")}</span></div>
     <p class="muted" style="margin:5px 0 0">${esc(r.summary||"")}</p></div></div>
   <div style="margin-top:16px">${(r.dimensions||[]).map(d=>`<div class="dim"><div class="lab"><span>${esc(d.name)} <span class="faint">— ${esc(d.note||"")}</span></span><span class="v">${esc(d.score)}</span></div><div class="bar"><span data-w="${+d.score||0}" style="width:0"></span></div></div>`).join("")}</div>
   <div style="display:flex;align-items:flex-start;gap:24px;margin-top:16px">
-    <div style="flex:1"><div class="eyebrow" style="margin-bottom:4px">Strengths</div><div class="chips">${(r.strengths||[]).map(s=>`<span class="chip good">${esc(s)}</span>`).join("")||'<span class="faint">—</span>'}</div></div>
-    <div style="flex:1"><div class="eyebrow" style="margin-bottom:4px">Gaps</div><div class="chips">${(r.gaps||[]).map(s=>`<span class="chip gap">${esc(s)}</span>`).join("")||'<span class="faint">—</span>'}</div></div>
+    <div style="flex:1"><div class="eyebrow" style="margin-bottom:4px">Strengths</div><div class="chips">${strengths.map(s=>`<span class="chip good">${esc(s)}</span>`).join("")||'<span class="faint">—</span>'}</div></div>
+    <div style="flex:1"><div class="eyebrow" style="margin-bottom:4px">Gaps</div><div class="chips">${gaps.map(s=>`<span class="chip gap">${esc(s)}</span>`).join("")||'<span class="faint">—</span>'}</div></div>
   </div></div>`;}
 
 /* ---------- Shortlist ---------- */
@@ -949,11 +973,23 @@ async function renderSkills(){
   if(!docs.length){v.innerHTML=needDocs("Select documents","Pick the CVs and roles you want mapped.");bindNd();return;}
   v.innerHTML=`<div class="graph-wrap"><div class="loader" style="position:absolute;inset:0"><div class="spin"></div><div>Mapping the skills landscape…</div></div></div>`;
   try{const sig="graph:"+docs.map(d=>d.id).join(",");let g=state.cache[sig];
-    if(!g){const prompt=`Extract a skills/competency knowledge graph across these recruitment documents. JSON only:
-{"nodes":[{"id":"short id","label":"display","group":"candidate"|"skill"|"role"|"domain"}],"edges":[{"from":"id","to":"id"}]}
-Rules: make each candidate (CV) and each role (JD) a node; connect them to SKILLS and DOMAINS evidenced in their text. Merge equivalent skills. 18-34 nodes max. Real content only.
+    if(!g){const cvNames=docs.filter(d=>d.type==="cv").map(d=>d.name);const jdNames=docs.filter(d=>d.type==="jd").map(d=>d.name);
+      const prompt=`Build a skills/competency knowledge graph across these recruitment documents. JSON only:
+{"nodes":[{"id":"short-unique-id","label":"display name","group":"candidate"|"skill"|"role"|"domain"}],"edges":[{"from":"id","to":"id"}]}
+MANDATORY: create exactly one "candidate" node for EACH of these CVs (use the name as label): ${JSON.stringify(cvNames)}. Create one "role" node for EACH JD: ${JSON.stringify(jdNames)}. Then add "skill" and "domain" nodes evidenced in the text and connect every candidate and role to the skills/domains found in THEIR document. Merge equivalent skills so they are shared between candidates where both have them. Keep total nodes 20-40. Real content only.
 ${docContext(docs,8000)}`;
-      g=parseJSON(await gemini(prompt,{json:true,temp:0.3}));state.cache[sig]=g;}
+      g=parseJSON(await gemini(prompt,{json:true,temp:0.3}));
+      // guarantee every selected CV and JD appears as a node
+      g.nodes=g.nodes||[];g.edges=g.edges||[];
+      const labels=new Set(g.nodes.map(n=>(n.label||"").toLowerCase()));
+      const roleNode=g.nodes.find(n=>n.group==="role");
+      docs.forEach((d,i)=>{
+        if(!labels.has(d.name.toLowerCase())){
+          const id="doc"+i;g.nodes.push({id,label:d.name,group:d.type==="jd"?"role":"candidate"});
+          if(d.type==="cv"&&roleNode)g.edges.push({from:id,to:roleNode.id});
+        }
+      });
+      state.cache[sig]=g;}
     drawGraph(g);
   }catch(e){v.querySelector(".graph-wrap").innerHTML=`<div class="empty"><p class="muted">${e.message}</p></div>`;}
 }
@@ -996,8 +1032,9 @@ function drawGraph(g){
       if(big){ctx.shadowColor=c;ctx.shadowBlur=16;}
       ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,7);ctx.fillStyle=c;ctx.fill();ctx.shadowBlur=0;
       if(big){ctx.lineWidth=2;ctx.strokeStyle=c;ctx.globalAlpha=.3;ctx.beginPath();ctx.arc(n.x,n.y,n.r+5,0,7);ctx.stroke();ctx.globalAlpha=1;}
-      ctx.fillStyle=big?ink:faint;ctx.font=(big?"600 12px":"450 10.5px")+" Inter, sans-serif";
-      const lbl=n.label.length>22?n.label.slice(0,21)+"…":n.label;ctx.fillText(lbl,n.x,n.y+n.r+10);}
+      ctx.fillStyle=big?ink:"#cfd6e2";ctx.font=(big?"600 12px":"500 10.5px")+" Inter, sans-serif";
+      ctx.shadowColor="rgba(0,0,0,.85)";ctx.shadowBlur=4;
+      const lbl=n.label.length>22?n.label.slice(0,21)+"…":n.label;ctx.fillText(lbl,n.x,n.y+n.r+10);ctx.shadowBlur=0;}
     graphAnim=requestAnimationFrame(step);}
   if(graphAnim)cancelAnimationFrame(graphAnim);step();
   window.addEventListener("resize",()=>{if(state.tab==="skills")size();});
