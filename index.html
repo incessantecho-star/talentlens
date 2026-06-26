@@ -421,6 +421,21 @@ html[data-theme="light"] .center::after{filter:invert(1);opacity:.06}
 @keyframes hintPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 45%,transparent)}50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 0%,transparent)}}
 .step-el{font-family:"JetBrains Mono";font-size:10px;color:var(--accent);margin-left:8px;opacity:.85}
 
+/* overview agent-first primary tile */
+.ov-primary{background:linear-gradient(135deg,rgba(45,212,191,.16),rgba(124,92,255,.10)),rgba(255,255,255,.05) !important;border-color:color-mix(in srgb,var(--accent) 32%,var(--line)) !important}
+.ov-agent-ic{width:58px;height:58px;flex:none;border-radius:50%;display:grid;place-items:center;color:#04201c;
+  background:radial-gradient(circle at 38% 32%, color-mix(in srgb,#fff 55%,var(--accent)), var(--accent-deep));
+  box-shadow:0 0 34px -6px var(--accent)}
+.ov-agent-ic svg{width:26px;height:26px}
+
+/* tighten rail so uploaded files are visible without scrolling */
+.nav{gap:1px}
+.navitem{padding:7px 11px}
+.rail-section{padding:12px 14px 4px}
+.rail-docs .hd{padding:10px 18px 6px}
+.uploadzone{padding:11px 12px;margin:4px 14px 8px}
+.doclist{min-height:96px}
+
 body{background:#070A12 !important;background-image:none !important}
 .aurora{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;contain:strict}
 .aurora .blob{position:absolute;border-radius:50%;filter:blur(85px);opacity:.55;will-change:transform}
@@ -742,40 +757,39 @@ function renderOverview(){
   const avg=scored.length?Math.round(scored.reduce((a,b)=>a+b.overall,0)/scored.length):null;
   const top=scored.length?[...scored].sort((a,b)=>b.overall-a.overall)[0]:null;
   v.innerHTML=`<div class="view-pad"><div class="bento">
-    <div class="tile hero">
-      <div><div class="eyebrow">Pool fit ${jd?"· "+esc(jd.name):""}</div></div>
-      <div style="display:flex;align-items:center;gap:22px;margin:6px 0">
-        ${halo("lg",avg==null?0:avg,"avg fit")}
-        <div>
-          <div class="bignum" data-count="${cvs.length}">0</div>
-          <div class="label">candidates in pool</div>
-          ${avg==null?`<div class="faint" style="font-size:12px;margin-top:10px">Run Fit Score to populate</div>`:`<div class="muted" style="font-size:12.5px;margin-top:10px">${scored.length} scored against the role</div>`}
+    <div class="tile span4 ov-primary">
+      <div class="eyebrow">Recommended first step</div>
+      <div style="display:flex;align-items:center;gap:18px;margin:12px 0 16px">
+        <div class="ov-agent-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22M4.9 4.9l2.5 2.5M16.6 16.6l2.5 2.5M19.1 4.9l-2.5 2.5M7.4 16.6l-2.5 2.5"/></svg></div>
+        <div style="min-width:0">
+          <div class="disp" style="font-size:25px;color:var(--ink);line-height:1.05">Run the AI Agent</div>
+          <div class="muted" style="font-size:13px;margin-top:5px;max-width:400px">It plans, scores every candidate, cross-checks the leader, and returns a cited recommendation — end to end.</div>
         </div>
       </div>
-      <button class="btn primary" id="ovRun" style="align-self:flex-start">${avg==null?"Run fit scoring":"Open Fit Score"}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <button class="btn primary" id="ovAgent">Run the AI Agent <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <span class="faint mono" style="font-size:11.5px">${cvs.length} CV · ${selJDs().length} JD${avg!=null?" · avg fit "+avg:""}</span>
+      </div>
     </div>
-    <div class="tile span3">
-      <div class="te eyebrow">Active role</div>
-      ${jd?`<div class="disp" style="font-size:19px;color:var(--ink)">${esc(jd.name)}</div><div class="muted" style="font-size:12.5px;margin-top:4px">${jd.numPages} page${jd.numPages>1?"s":""} · selected as the target role</div>`:`<div class="muted">No job description selected. Tag one in the rail (⇄) and select it.</div>`}
-    </div>
-    <div class="tile span3">
-      <div class="te eyebrow">Top candidate</div>
-      ${top?`<div style="display:flex;align-items:center;gap:14px">${halo("md",top.overall,"fit")}<div><div class="disp" style="font-size:18px;color:var(--ink)">${esc(top._name)}</div><span class="verdict ${vClass(top.verdict)}">${esc(top.verdict)}</span></div></div>`:`<div class="muted">No scores yet — run Fit Score to surface your strongest match.</div>`}
-    </div>
-    <div class="tile span2"><div class="te eyebrow">Pool</div><div class="stat-row"><span class="bignum" data-count="${cvs.length}" style="font-size:34px">0</span><span class="label">CVs</span></div></div>
-    <div class="tile span2"><div class="te eyebrow">Roles</div><div class="stat-row"><span class="bignum" data-count="${selJDs().length}" style="font-size:34px">0</span><span class="label">JDs</span></div></div>
     <div class="tile span2">
-      <div class="te eyebrow">Next steps</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <button class="btn ghost" style="justify-content:flex-start" data-go2="shortlist">Build shortlist →</button>
-        <button class="btn ghost" style="justify-content:flex-start" data-go2="interview">Interview kit →</button>
-        <button class="btn ghost" style="justify-content:flex-start" data-go2="skills">Skills graph →</button>
+      <div class="te eyebrow">Active role</div>
+      ${jd?`<div class="disp" style="font-size:17px;color:var(--ink);line-height:1.2">${esc(jd.name)}</div><div class="muted" style="font-size:12px;margin-top:4px">${jd.numPages} page${jd.numPages>1?"s":""} · target role</div>`:`<div class="muted" style="font-size:12.5px">No JD selected. Tag one with ⇄ in the rail and select it.</div>`}
+      ${top?`<div class="eyebrow" style="margin-top:14px">Current leader</div><div style="display:flex;align-items:center;gap:10px;margin-top:6px">${halo("sm",top.overall,"")}<span style="font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(top._name)}</span></div>`:""}
+    </div>
+    <div class="tile span6">
+      <div class="te eyebrow">Or jump straight to a tool</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn ghost" data-go2="match">Fit Score →</button>
+        <button class="btn ghost" data-go2="shortlist">Shortlist →</button>
+        <button class="btn ghost" data-go2="interview">Interview Kit →</button>
+        <button class="btn ghost" data-go2="skills">Skills Graph →</button>
+        <button class="btn ghost" data-go2="reader">Read documents →</button>
       </div>
     </div>
   </div></div>`;
-  $("#ovRun").onclick=()=>goTab("match");
+  $("#ovAgent").onclick=()=>goTab("agent");
   v.querySelectorAll("[data-go2]").forEach(b=>b.onclick=()=>goTab(b.dataset.go2));
-  bindOvAdd();animateHalos(v);animateCounts(v);
+  bindOvAdd();animateHalos(v);
 }
 function bindOvAdd(){const b=$("#ovAdd");if(b)b.onclick=()=>$("#fileInput").click();}
 function animateCounts(root){(root||document).querySelectorAll("[data-count]").forEach(el=>{
