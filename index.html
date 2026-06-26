@@ -776,25 +776,38 @@ Use the whole scale. Identical input MUST produce identical scores.`;
 function computeOverall(dims){let tot=0,w=0;(dims||[]).forEach(d=>{const wt=FIT_WEIGHTS[d.name]!=null?FIT_WEIGHTS[d.name]:0.25;tot+=wt*Math.max(0,Math.min(100,+d.score||0));w+=wt;});return w?Math.round(tot/w):0;}
 function verdictFor(o){return o>=80?"strong fit":o>=60?"possible fit":"weak fit";}
 function stableSort(arr){return arr.map((x,i)=>[x,i]).sort((a,b)=>(b[0].overall-a[0].overall)||(a[0]._name||"").localeCompare(b[0]._name||"")||(a[1]-b[1])).map(p=>p[0]);}
-async function scoreCandidate(jd,cv){
-  const sig="score:"+jd.id+":"+cv.id;
-  if(state.cache[sig])return state.cache[sig];
-  const prompt=`You are an expert technical recruiter. Score how well the CANDIDATE fits the ROLE. Return JSON only:
-{"dimensions":[{"name":"Skills match","score":0-100,"note":"short"},{"name":"Experience level","score":0-100,"note":"short"},{"name":"Domain / industry","score":0-100,"note":"short"},{"name":"Role responsibilities","score":0-100,"note":"short"}],"summary":"2 sentences","strengths":["..."],"gaps":["..."]}
-${FIT_RUBRIC}
-Always include 2-4 concrete strengths and 1-3 concrete gaps grounded in the CV; never leave them empty. Base everything ONLY on the text.
+async function scoreAll(jd,cvs){
+  const key="scoreset:"+jd.id+":"+cvs.map(c=>c.id).sort((a,b)=>a-b).join(",");
+  if(state.cache[key])return state.cache[key];
+  const list=cvs.map((c,i)=>`### CANDIDATE ${i+1} — ${c.name}\n${c.pages.map(p=>p.text).join(" ").slice(0,4500)}`).join("\n\n");
+  const prompt=`You are an expert technical recruiter. Score and rank ALL candidates against the SAME role in ONE pass, using ONE consistent rubric, so the ranking is stable and directly comparable. Return JSON only:
+{"candidates":[{"name":"exact candidate name","dimensions":[{"name":"Skills match","score":0-100,"note":"short"},{"name":"Experience level","score":0-100,"note":"short"},{"name":"Domain / industry","score":0-100,"note":"short"},{"name":"Role responsibilities","score":0-100,"note":"short"}],"summary":"2 sentences","strengths":["..."],"gaps":["..."]}]}
+Include EVERY candidate exactly once, using their exact name. ${FIT_RUBRIC}
+Always give 2-4 concrete strengths and 1-3 concrete gaps per candidate; never empty. Base everything ONLY on the text.
 ROLE — ${jd.name}: ${jd.pages.map(p=>p.text).join(" ").slice(0,5000)}
-CANDIDATE — ${cv.name}: ${cv.pages.map(p=>p.text).join(" ").slice(0,5000)}`;
-  const r=parseJSON(await gemini(prompt,{json:true,temp:0}));
-  r.dimensions=(r.dimensions||[]).map(d=>({name:d.name,score:Math.max(0,Math.min(100,Math.round(+d.score||0))),note:d.note||""}));
-  r.overall=computeOverall(r.dimensions);
-  r.verdict=verdictFor(r.overall);
-  r._name=cv.name;
-  state.cache[sig]=r;
-  return r;
+CANDIDATES:
+${list}`;
+  const data=parseJSON(await gemini(prompt,{json:true,temp:0}));
+  const arr=(data.candidates||[]).map(c=>{
+    const dims=(c.dimensions||[]).map(d=>({name:d.name,score:Math.max(0,Math.min(100,Math.round(+d.score||0))),note:d.note||""}));
+    const overall=computeOverall(dims);
+    return {dimensions:dims,summary:c.summary||"",strengths:c.strengths||[],gaps:c.gaps||[],overall,verdict:verdictFor(overall),_name:c.name};
+  });
+  // guarantee one result per CV, matched by name (tolerant)
+  const out=cvs.map(cv=>{
+    const nl=cv.name.toLowerCase().trim();
+    let m=arr.find(a=>(a._name||"").toLowerCase().trim()===nl)
+        ||arr.find(a=>nl.includes((a._name||"").toLowerCase().trim())||(a._name||"").toLowerCase().trim().includes(nl));
+    if(!m)m={dimensions:[],summary:"Could not score this candidate from the provided text.",strengths:[],gaps:[],overall:0,verdict:"weak fit"};
+    m._name=cv.name;
+    return m;
+  });
+  state.cache[key]=out;
+  return out;
 }
-function cachedScores(){const jd=selJDs()[0];if(!jd)return[];
-  return selCVs().map(cv=>state.cache["score:"+jd.id+":"+cv.id]).filter(Boolean);}
+function cachedScores(){const jd=selJDs()[0];if(!jd)return[];const cvs=selCVs();if(!cvs.length)return[];
+  const key="scoreset:"+jd.id+":"+cvs.map(c=>c.id).sort((a,b)=>a-b).join(",");
+  return state.cache[key]||[];}
 function renderOverview(){
   renderFocusHead(state.docs.length?`<button class="btn" id="ovAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add documents</button>`:"");
   const v=$("#view");
@@ -899,8 +912,7 @@ async function renderMatch(){
   if(!jds.length||!cvs.length){v.innerHTML=`<div class="view-pad">${matchControls()}<div class="card"><p class="muted" style="margin:0">Select at least <b>one job description</b> and <b>one CV</b> in the rail, then pick a role above.</p></div></div>`;bindMatchControls();return;}
   v.innerHTML=`<div class="view-pad">${matchControls()}<div id="matchOut">${skelCards(Math.min(cvs.length,3))}</div></div>`;bindMatchControls();
   const jd=jds[0],out=$("#matchOut");
-  try{const results=[];
-    for(const cv of cvs){results.push(await scoreCandidate(jd,cv));}
+  try{const results=await scoreAll(jd,cvs);
     const sorted=stableSort(results);
     out.innerHTML=`<p class="eyebrow" style="margin:0 0 16px">Scored against ${esc(jd.name)} · ${sorted.length} candidate${sorted.length>1?"s":""} · weighted rubric</p>`+sorted.map(matchCard).join("");
     animateHalos(out);animateBars(out);
@@ -1137,13 +1149,9 @@ ROLE ${jd.name}: ${jd.pages.map(p=>p.text).join(" ").slice(0,5000)}`,{json:true,
     stepDone(s,`<div class="eyebrow">Must-haves</div><div class="chips">${(req.mustHaves||[]).map(x=>`<span class="chip good">${esc(x)}</span>`).join("")||'<span class="faint">—</span>'}</div><div class="eyebrow" style="margin-top:10px">Nice-to-have</div><div class="chips">${(req.niceToHaves||[]).map(x=>`<span class="chip">${esc(x)}</span>`).join("")||'<span class="faint">—</span>'}</div>`);
 
     s=stepStart("Score each candidate against the requirements");
-    const scores=[];
-    for(const cv of cvs){
-      const r=await scoreCandidate(jd,cv);
-      r.topStrength=asList(r.strengths)[0]||"—";r.topGap=asList(r.gaps)[0]||"—";
-      scores.push(r);s.detail=agentMini(stableSort(scores));traceRender();
-    }
-    const ranked=stableSort(scores);stepDone(s,agentMini(ranked));
+    const scored=await scoreAll(jd,cvs);
+    scored.forEach(r=>{r.topStrength=asList(r.strengths)[0]||"—";r.topGap=asList(r.gaps)[0]||"—";});
+    const ranked=stableSort(scored);s.detail=agentMini(ranked);stepDone(s,agentMini(ranked));
 
     s=stepStart("Cross-check the leading candidate");
     const top=ranked[0];const topDoc=state.docs.find(d=>d.name===top._name);
@@ -1169,6 +1177,7 @@ LEADER RISKS: ${(cross.risks||[]).join("; ")||"none noted"}`,{temp:0.4});
         <button class="btn" data-go2b="shortlist">Open full shortlist →</button>
       </div></div>`;
     const r1=$("#agentResult");
+    animateHalos(r1);animateBars(r1);
     r1.querySelectorAll("[data-go2b]").forEach(b=>b.onclick=()=>goTab(b.getAttribute("data-go2b")));
     r1.querySelectorAll("[data-go-int]").forEach(b=>b.onclick=()=>{const sel=$("#ivPick");goTab("interview");});
   }catch(e){
